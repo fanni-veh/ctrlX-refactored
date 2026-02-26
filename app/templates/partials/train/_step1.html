@@ -1,0 +1,67 @@
+<div id="content_step_1" class="container">
+  <div class="carousel-item active text-center">
+    <form id="uploadForm" hx-boost="true" hx-post="/htmx/train/preview" hx-target="#preview" hx-encoding="multipart/form-data" hx-trigger="submit">
+      <h1>{{choose_your_data}}</h1>
+      <p>{{choose_your_data_sub}}</p>
+      <div id="dataSourceSelectionBox" class="d-grid">
+        <button type="button" class="btn btn-secondary btn-lg" onclick="showDatabaseList()">{{ load_from_database }}</button>
+        <div id="database_container" class="d-none" hx-target="this" hx-get="/htmx/apps_from_db/train" hx-trigger="load" hx-swap="innerHTML" hx-preserve>
+          <div class="p-4">
+            <span class="loading-spinner"></span>
+            <span id="loader">{{ loading }} ...</span>
+          </div>
+        </div>
+
+        <label for="csvFileInput" class="form-label">{{ load_from_zip }}</label>
+        <input type="file" class="form-control" id="csvFileInput" name="file" accept=".zip" onchange="validateForm(this)" />
+        <div class="my-3">
+          <small>{{download_example_file}}</small><br />
+          <span class="text-info text-decoration-underline" role="button" hx-on:click="window.location.href='/static/example_training_file.zip'" class="link">example_training_file.zip</span>
+        </div>
+        <div class="d-flex justify-content-between mt-4">
+          <button type="submit" class="btn btn-primary w-100" type="button" id="loadPreviewBtn" onclick="carousel.next()" disabled>{{preview}}</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  var csvFileInput = document.getElementById("csvFileInput");
+
+  function showDatabaseList() {
+    document.getElementById("database_container").classList.toggle("d-none");
+  }
+
+  /**
+   * Function that:
+   *      - checks CSV file or DB sources are selected
+   *      - enables/disables buttons accordingly.
+   *
+   * Trigger: When a CSV file is uploaded at the input form "csvFileInput", or if a checkbox is selected on the DB sources.
+   */
+  function validateForm(clickedElement) {
+    var validNext = true;
+    const file = csvFileInput.files[0];
+    const checkedRadio = document.querySelector("#db_table .select-radio:checked");
+
+    if (clickedElement.id === "csvFileInput" && file) {
+      // user selects a CSV file
+      // hide the database list
+      document.getElementById("database_container").classList.add("d-none");
+
+      // uncheck the DB radio button if any is checked
+      if (checkedRadio) {
+        checkedRadio.checked = false;
+      }
+    } else {
+      // If no CSV file was selected, then check if any DB sources were selected, and enable/disable buttons accordingly.
+      if (checkedRadio) {
+        //user select database, hide and clear csv input
+        csvFileInput.value = "";
+      } else {
+        validNext = false;
+      }
+    }
+    document.getElementById("loadPreviewBtn").disabled = !validNext;
+  }
+</script>

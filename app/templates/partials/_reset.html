@@ -1,0 +1,87 @@
+<form id="loginForm">
+    {% if token is not defined %}
+    <h3>{{ reset_password }}</h3>
+    <p class="text-center">{{ reset_info }}</p>
+    <label for="username">{{ login_email }}</label>
+    <input type="text" placeholder="{{ login_email }}" id="username" required pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}">
+    <button type="button" onclick="sendResetCode()">{{ send_code }}</button>
+    {% else %}
+    <h3>{{ change_password }}</h3>
+    <p class="text-center">{{ new_password }}</p>
+    <label for="password">{{ login_password }}</label>
+    <input type="password" placeholder="{{ login_password }}" id="password" required>
+    <button type="button" onclick="setPassword()">{{ change_password }}</button>
+    {% endif %}
+
+</form>
+
+<script>
+    const baseUrl = window.location.origin;
+
+    {% if token is not defined %}
+    var endpoint = "reset";
+    var failed = "{{ register_failed }}";
+    var success = "{{ register_success }}";
+
+    async function sendResetCode() {
+        const username = document.getElementById('username').value;
+        const response = await fetch(`${baseUrl}/${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `username=${encodeURIComponent(username)}`,
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            showToast('success', "{{email_sended}}");            
+        } else {
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(error => error.msg)
+                showToast('error', `${failed}: ${msg}`);
+            } else {
+                showToast('error', `${failed}: ${data.detail}`);
+            }
+        }
+    }
+
+    {% else %}
+    var endpoint = "reset/{{userid}}/{{token}}";
+    var failed = "{{reset_password_failed}}";
+    var success = "{{reset_password_successful}}";
+
+    async function setPassword() {
+        const password = document.getElementById('password').value;
+        const response = await fetch(`${baseUrl}/${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `password=${encodeURIComponent(password)}`,
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            showToast('success', success);
+            setTimeout(() => { window.location.href = `{{ url_for('root') }}`; }, 1000);
+        } else {
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(error => error.msg)
+                showToast('error', `${failed}: ${msg}`);
+            } else {
+                showToast('error', `${failed}: ${data.detail}`);
+            }
+        }
+    }
+    {% endif %}
+
+    function showToast(type, message) {
+        var x = document.getElementById("snackbar");
+        x.innerText = message;
+        x.classList.add('show');
+        x.classList.add(type);
+
+        setTimeout(() => { x.className = x.className.replace("show", ""); }, 10000);
+    }
+</script>

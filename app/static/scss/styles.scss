@@ -1,0 +1,228 @@
+@import "colors";
+@import "fonts";
+
+* {
+  font-family: $font-family !important;
+
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+
+  &:before {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  &:after {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+}
+
+body {
+  background-color: $body_background;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  color: $white;
+}
+
+.background {
+  width: 430px;
+  height: 520px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  left: 50%;
+  top: 50%;
+}
+
+footer {
+  position: fixed;
+  bottom: 0;
+  padding: 0.25rem 2rem 0.25rem 2rem;
+  text-align: left;
+  width: 100%;
+  color: gray;
+  font-size: small; 
+  box-shadow: 0 -1px 3px rgba(255, 255, 255, 0.1);  
+  background-color: black;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+h1 {
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 42px;
+  text-align: center;
+}
+
+p {
+  font-size: 14px;
+  font-weight: 300;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+}
+
+.button {
+  &:hover {
+    background-color: $button_primary_hover;
+  }
+}
+
+.menu_buttons {
+  .button {
+    margin-top: 20px;
+    width: 50%;
+    background-color: $button_primary;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    color: $white;
+    padding: 15px 0;
+    font-size: larger;
+    font-weight: bolder;
+    border-radius: 5px;
+    text-decoration: none;
+  }
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spinner {
+  display: inline-block;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 4px solid #ffffff;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+// Modal for filters
+#preview {
+  .modal {
+    .modal-content {
+      $histogram_bin_enabled: rgba(100, 149, 237, 0.6);
+      $histogram_bin_disabled: rgba(66, 81, 109, 0.6);
+
+      .number-field {
+        display: flex;
+        margin-bottom: 22px;
+
+        span {
+          margin-right: 10px;
+          margin-top: 6px;
+          font-size: 17px;
+          width: 7rem;
+        }
+
+        input {
+          flex: 1;
+
+          border-radius: 9px;
+          text-align: center;
+          border: 0px;
+        }
+      }
+
+      .slider {
+        width: 100%;
+        height: 6px;
+        position: relative;
+        background: #e4e4e4;
+        border-radius: 5px;
+
+        .numeric-slider {
+          height: 100%;
+          position: absolute;
+          background: #01940b;
+        }
+      }
+
+      .range-input {
+        position: relative;
+
+        input {
+          position: absolute;
+          width: 100%;
+          height: 5px;
+          background: none;
+          top: -5px;
+          pointer-events: none;
+          cursor: pointer;
+          -webkit-appearance: none;
+          appearance: none;
+        }
+      }
+
+      input[type="range"] {
+        // Edge styles
+        &::-webkit-slider-thumb {
+          height: 18px;
+          width: 18px;
+          border-radius: 70%;
+          background: #555;
+          pointer-events: auto;
+          -webkit-appearance: none;
+        }
+        // Firefox styles
+        &::-moz-range-thumb {
+          height: 18px;
+          width: 18px;
+          border-radius: 70%;
+          background: #555;
+          pointer-events: auto;
+          -webkit-appearance: none;
+        }
+      }
+
+      .histogram-bar-container {
+        display: flex;
+        align-items: flex-end;
+        height: 80px;
+        margin: 1rem 0 0.5rem 0;
+        gap: 3px;
+
+        .histogram-bar {
+          flex: 1;
+          background-color: $histogram_bin_enabled;
+          height: 0; // Default height
+          transition: height 0.4s;
+
+          &.out-of-range {
+            background-color: $histogram_bin_disabled !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+[role="button"],
+button,
+input,
+label,
+select {
+    cursor: pointer;
+}

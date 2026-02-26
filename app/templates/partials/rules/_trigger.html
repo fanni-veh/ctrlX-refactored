@@ -1,0 +1,49 @@
+<div class="card mb-2 border-secondary" id="{{ action_type }}_rule_{{ rule_index }}_trigger_{{ trigger_index }}">
+  <div class="card-body p-3">
+    {% set trigger_type = trigger.keys() | first %}
+    {% set trigger_value = trigger[trigger_type] %}
+    {% set available = trigger._available_types | default([]) %}
+    <div class="row align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Trigger Type</label>
+        <select class="form-select"
+                name="{{ action_type }}_rule_{{ rule_index }}_trigger_{{ trigger_index }}_type"
+                hx-post="/htmx/rules/{{ app_id }}/{{ action_type }}/rule/{{ rule_index }}/trigger/{{ trigger_index }}/update-type"
+                hx-trigger="change"
+                hx-target="#{{ action_type }}_rule_{{ rule_index }}_trigger_{{ trigger_index }}"
+                hx-swap="outerHTML">
+          {% if trigger_type == 'min_new_cycles' or 'min_new_cycles' in available %}
+          <option value="min_new_cycles" {% if trigger_type == 'min_new_cycles' %}selected{% endif %}>Minimum New Cycles</option>
+          {% endif %}
+          {% if trigger_type == 'interval' or 'interval' in available %}
+          <option value="interval" {% if trigger_type == 'interval' %}selected{% endif %}>Time Interval</option>
+          {% endif %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Value</label>
+        {% if trigger_type == 'min_new_cycles' %}
+          <input type="number" 
+                 class="form-control" 
+                 min="1" 
+                 value="{{ trigger_value or 10 }}"
+                 name="{{ action_type }}_rule_{{ rule_index }}_trigger_{{ trigger_index }}_value"
+                 placeholder="e.g., 10">
+        {% else %}
+          <input type="text" 
+                 class="form-control" 
+                 value="{{ trigger_value or '1h' }}"
+                 name="{{ action_type }}_rule_{{ rule_index }}_trigger_{{ trigger_index }}_value"
+                 placeholder="e.g., 1h, 30m, 1d">
+          <small class="form-text text-muted">Format: 1d (day), 1h (hour), 30m (minutes)</small>
+        {% endif %}
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-sm btn-outline-danger w-100"
+                onclick="document.getElementById('{{ action_type }}_rule_{{ rule_index }}_trigger_{{ trigger_index }}').remove(); event.stopPropagation();">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

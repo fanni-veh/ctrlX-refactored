@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-bs-theme="dark">
+  <head>
+    {% include 'partials/_head.html' %}
+    <script src="{{ url_for('static', path='plotly.min.js') }}"></script>
+    <link href="{{ url_for('static', path='/css/train_predict.css') }}" rel="stylesheet" />
+  </head>
+
+  <body class="bg-black">
+    {% include 'partials/_header.html' %}
+
+    <!-- Stepper -->
+    <div class="container text-center">
+      <div class="card mb-3 bg-black border-0">
+        <div class="card-body">
+          <div class="steps d-flex flex-nowrap justify-content-between padding-top-2x padding-bottom-1x">
+            <div class="step active">
+              <div class="step-icon-wrap">
+                <div class="step-icon">1</div>
+              </div>
+              <h4 class="step-title">{{step_data}}</h4>
+            </div>
+            <div class="step">
+              <div class="step-icon-wrap">
+                <div class="step-icon">2</div>
+              </div>
+              <h4 class="step-title">{{step_preview}}</h4>
+            </div>
+            <div class="step">
+              <div class="step-icon-wrap">
+                <div class="step-icon">3</div>
+              </div>
+              <h4 class="step-title">{% if task_type == 'train'%}{{step_train}}{%else%}{{step_predict}}{%endif%}</h4>
+            </div>
+            <div class="step">
+              <div class="step-icon-wrap">
+                <div class="step-icon">4</div>
+              </div>
+              <h4 class="step-title">{{step_results}}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="carousel" class="carousel slide justify-content-center pb-5" data-bs-keyboard="false" data-bs-touch="false" data-bs-ride="false">
+      <div class="carousel-inner">
+        <!-- Step 1: Data -->
+        {% if task_type == 'train'%}
+          {% include "partials/train/_step1.html" %}
+        {% else %}
+          {% include "partials/predict/_step1.html" %}
+        {% endif %}
+        <!-- Step 2: Preview, #preview will swapped by htmx in step1 -->
+        <div id="content_step_2" class="container">
+          <div class="carousel-item text-center">
+            <div id="preview" class="col-sm">
+              <p id="resultMessage"></p>
+              <div>
+                <span class="loading-spinner"></span>
+                <span id="loader">{{ loading }} ...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Step 3: Train/Predict aka processing -->
+        <div id="content_step_3" class="container">
+          <div class="carousel-item text-center">
+            <div id="processing" class="col-sm">
+              <p id="resultMessage"></p>
+              <div>
+                <span class="loading-spinner"></span>
+                <span id="loader">{{ loading }} ...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Step 4: Results -->
+        <div id="content_step_4" class="container">
+          <div class="carousel-item text-center">
+            <div id="result" class="col-sm">
+              <p id="resultMessage"></p>
+              <div>
+                <span class="loading-spinner"></span>
+                <span id="loader">{{ loading }} ...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var carousel = new bootstrap.Carousel(document.getElementById("carousel"), {
+        interval: false, // no auto-slide
+        wrap: false      // stop at last slide
+      });
+      var preview_orig = document.getElementById("preview").innerHTML;
+      var currentStep = 1;
+
+      function updateSteps(currentIndex) {
+        const steps = document.querySelectorAll(".step");
+
+        steps.forEach((step, index) => {
+          step.classList.remove("active", "completed");
+          if (index < currentIndex) {
+            step.classList.add("completed");
+          } else if (index === currentIndex) {
+            step.classList.add("active");
+          }
+        });
+      }
+
+      document.getElementById("carousel").addEventListener("slide.bs.carousel", function (event) {
+        const currentIndex = event.to;
+        if (currentIndex === 0) {
+          // Go from preview to data-source
+          setTimeout(() => {
+            document.getElementById("preview").innerHTML = preview_orig;
+          }, 1000);
+        }
+        else if (currentIndex === 1) {
+          // Go from action to preview, clear state and errors
+          setTimeout(() => {
+            const dataset_name = document.querySelector("#dataset_name");
+            if (dataset_name) {
+              htmx.trigger("#dataset_name", "blur");
+            }else {
+              console.debug("dataset_name input-element does not exist already");
+            }
+            document.getElementById("predict_error_container")?.classList.add("d-none");
+            document.getElementById("train_error_container")?.classList.add("d-none");
+            document.querySelectorAll("#status-updates dt").forEach(dt => dt.classList.remove("active", "complete", "error"));           
+          }, 1000);
+        }
+        updateSteps(currentIndex);
+        if (currentIndex === 3) {
+          updateSteps(5);
+        }
+      });
+
+      function updateCarouselStepper() {
+        const steps = document.querySelectorAll(".step");
+        steps.forEach((step) => step.classList.replace("active", "done"));
+
+        if (currentStep <= steps.length) {
+          document.getElementById(`step${currentStep}`).classList.add("active");
+        }
+      }
+    </script>
+    {% include 'partials/_footer.html' %}
+  </body>
+</html>

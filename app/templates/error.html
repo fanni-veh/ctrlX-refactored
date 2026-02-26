@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-bs-theme="dark">
+    <head>
+        {% include 'partials/_head.html' %}
+        <link href="{{ url_for('static', path='/css/index.css') }}" rel="stylesheet" />
+    </head>
+    <body class="bg-black">
+        {% include 'partials/_header.html' %}
+
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 text-center">
+                    <h2>{{ active_error_message }}</h2>
+                    <br>
+                    <h3><a href="/">{{go_to_home_page}}</a></h3>
+                </div>
+            </div>
+        </div>
+    {% include 'partials/_footer.html' %}
+  </body>
+</html>

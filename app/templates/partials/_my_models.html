@@ -1,0 +1,33 @@
+<div class="container-box text-center rounded p-4 m-2 bg-dark h-100 table-responsive">
+  <h4>{{main_my_models}}</h4>
+  <p>{{main_my_models_sub}}</p>
+  <table id="models-table" class="table text-white">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)">{{application}} <i class="bi bi-arrow-down-up ms-1"></i></th>
+        <th onclick="sortTable(1)" class="d-none d-md-table-cell">{{dataset}} <i class="bi bi-arrow-down-up ms-1"></i></th>
+        {% if user_role != 'exhibition' %}
+        <th onclick="sortTable(2)">{{number_of_models}} <i class="bi bi-arrow-down-up ms-1"></i></th>
+        {% endif %}
+        <th>{{actions}}</th>
+      </tr>
+    </thead>
+    <tbody hx-get="/htmx/my_models" hx-trigger="load, every 10s" hx-target="#models-table tbody"></tbody>
+  </table>
+</div>
+
+<script>
+  function sortTable(colIndex) {
+    const table = document.getElementById("models-table");
+    const tbody = table.tBodies[0];
+    const rows = Array.from(tbody.rows);
+    const asc = table.dataset.sortOrder !== "asc";
+    rows.sort((a, b) => {
+      const x = a.cells[colIndex].innerText.trim().toLowerCase();
+      const y = b.cells[colIndex].innerText.trim().toLowerCase();
+      return asc ? x.localeCompare(y, undefined, {numeric:true}) : y.localeCompare(x, undefined, {numeric:true});
+    });
+    rows.forEach(r => tbody.appendChild(r));
+    table.dataset.sortOrder = asc ? "asc" : "desc";
+  }
+</script>

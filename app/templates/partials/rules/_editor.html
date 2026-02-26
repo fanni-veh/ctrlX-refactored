@@ -1,0 +1,44 @@
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#trainRules" type="button">Train Rules</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#predictionRules" type="button">Prediction Rules</button>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="trainRules">
+    <div class="mb-3">
+      <button class="btn btn-success" 
+              hx-post="/htmx/rules/{{ data.application_id }}/train/add-rule"
+              hx-target="#trainRulesContainer"
+              hx-swap="beforeend">
+        <i class="bi bi-plus-circle"></i> Add Train Rule
+      </button>
+    </div>
+    <div id="trainRulesContainer">
+      {% for rule in data.rules.actions.train %}
+        {% set data = {'rule': rule, 'rule_index': loop.index0, 'action_type': 'train', 'app_id': data.application_id} %}
+        {% include 'partials/rules/_rule_card.html' %}
+      {% endfor %}
+    </div>
+  </div>
+  
+  <div class="tab-pane fade" id="predictionRules">
+    <div class="mb-3">
+      <button class="btn btn-success"
+              hx-post="/htmx/rules/{{ data.application_id }}/prediction/add-rule"
+              hx-target="#predictionRulesContainer"
+              hx-swap="beforeend">
+        <i class="bi bi-plus-circle"></i> Add Prediction Rule
+      </button>
+    </div>
+    <div id="predictionRulesContainer">
+      {% for rule in data.rules.actions.prediction %}
+        {% set data = {'rule': rule, 'rule_index': loop.index0, 'action_type': 'prediction', 'app_id': data.application_id} %}
+        {% include 'partials/rules/_rule_card.html' %}
+      {% endfor %}
+    </div>
+  </div>
+</div>

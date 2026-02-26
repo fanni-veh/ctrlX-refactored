@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-bs-theme="dark">
+  <head>
+    {% include 'partials/_head.html' %}
+    <link href="{{ url_for('static', path='/css/index.css') }}" rel="stylesheet" />
+  </head>
+
+  <body class="bg-black pb-5">
+    {% include 'partials/_header.html' %} 
+    
+    {% if user is not defined %}
+    <div id="home" class="background-image">
+      <div class="text-container">
+        <h1 class="display-4 fw-bold">{{mind}}<br />{{your_drive_system}}</h1>
+        <div class="grow-content">
+          <p class="lead my-5">{{slogan}}</p>
+          <h4 class="fw-bold">{{ start_journey }}</h4>
+          <a hx-get="/htmx/login" hx-target="#home" hx-swap="outerHTML" class="btn btn-primary btn-lg mb-2">{{ sign_in }}</a><br />
+          {{no_account_yet}}<br />
+          <a href="/create_user" hx-target="#home" hx-swap="outerHTML" class="btn btn-link text-white">{{ create_new_account }}</a>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div id="dashboard">
+      <h1 class="text-center p-3">{{my_mind_scape}}</h1>
+      <div class="container mt-5">
+        <div class="row">
+          <div class="col-12">{% include "partials/_my_drive_systems.html" %}</div>
+
+          <div class="col-12 d-flex flex-column">{% include "partials/_my_models.html" %}</div>
+          {% if user_role != "exhibition" %}
+            <div class="col-12 d-flex flex-column">{% include "partials/_training_progress.html" %}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% include 'partials/_footer.html' %}
+  </body>
+</html>

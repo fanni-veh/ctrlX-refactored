@@ -1,0 +1,106 @@
+<div id="status_loader" hx-get="/api/run/{{data.run_id}}" hx-trigger="load, every 500 ms" hx-target="#status-updates" hx-swap="none">
+    <div class="row">
+      <div class="col">
+        <h1>{{step_predict}}</h1>
+        <p>{{predict_subtitle}}..</p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title fs-2 text-decoration-underline">{{state}}</h5>
+            <dl class="row" id="status-updates">
+              <dt class="col-12 status active" data-step="0">
+                <span class="fs-4 f-b">{{processing_data}}</span>
+                <i class="bi bi-arrow-clockwise loading text-primary fs-4"></i>
+                <i class="bi bi-check-circle okay text-success fs-4"></i>
+                <i class="bi bi-ban error text-danger fs-4"></i>
+              </dt>
+              <dt class="col-12 status" data-step="1">
+                <span class="fs-4 f-b">{{predict_motor_health}}</span>
+                <i class="bi bi-arrow-clockwise loading text-primary fs-4"></i>
+                <i class="bi bi-check-circle okay text-success fs-4"></i>
+                <i class="bi bi-ban error text-danger fs-4"></i>
+              </dt>             
+              <dt class="col-12 status" data-step="2">
+                <span class="fs-4 f-b">{{generating_summary}}</span>
+                <i class="bi bi-arrow-clockwise loading text-primary fs-4"></i>
+                <i class="bi bi-check-circle okay text-success fs-4"></i>
+                <i class="bi bi-ban error text-danger fs-4"></i>
+              </dt>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-4 d-none" id="predict_error_container">
+      <div class="col-lg-12">
+        <div class="alert alert-danger d-flex align-items-center" role="alert" id="predict_error_box">
+          <i class="bi bi-exclamation-circle me-2"></i>
+          <span id="predict_error_msg"></span>
+        </div>
+      </div>
+      <div id="button-container" class="col-lg-12 d-flex justify-content-between mt-4">
+        <button class="btn btn-primary mx-2 w-100" type="button" data-bs-target="#carousel" data-bs-slide="prev">{{previous}}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showPredictError(msg) {
+    var container = document.getElementById("predict_error_container");
+    var messageSpan = document.getElementById("predict_error_msg");
+
+    messageSpan.innerText = msg;
+    container.classList.remove("d-none");
+
+    // Add a smooth scroll-down animation
+    container.style.maxHeight = "0px"; // Start collapsed
+    container.style.overflow = "hidden"; // Hide content outside the container
+    container.style.transition = "max-height 0.5s ease"; // Animation timing
+
+    // Trigger the animation
+    setTimeout(() => {
+      container.style.maxHeight = container.scrollHeight + "px"; // Expand to fit content
+    }, 10); // Small delay to ensure the transition applies
+  }
+
+  document.addEventListener("htmx:afterOnLoad", function (evt) {
+    if (evt.detail.target.id == "status-updates") {
+      const response = JSON.parse(evt.detail.xhr.responseText);
+      // Update each step's state based on current step number
+      const isError = response.state === "error";
+      const isSuccess = response.state === "success";
+      document.querySelectorAll('.status[data-step]').forEach((container) => {
+        const stepIndex = parseInt(container.dataset.step);
+        container.classList.remove("active", "complete", "error");        
+        if (isError) {
+          container.classList.add("error");
+        } else if (isSuccess || stepIndex < response.state_metadata.step) {
+          container.classList.add("complete");
+        } else if (stepIndex === response.state_metadata.step) {
+          container.classList.add("active");
+        }
+      });      
+
+      // Move the carousel if status is success or error
+      if (response.state === "error" ||response.state === "success") {
+        // Stopp htmx polling        
+        const loader = document.getElementById('status_loader');
+        loader.removeAttribute('hx-trigger');
+        htmx.process(loader);
+
+        if (response.state === "error") {
+          showPredictError(response.message);
+          return;
+        } 
+        
+        // Make HTMX-Request for result-summary
+        htmx.ajax("GET", `/htmx/report/{{data.run_id}}`, {target: "#result" });
+        setTimeout(() => carousel.next(), 1000);
+      }
+    }
+  });
+</script>

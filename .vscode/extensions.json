@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "glenn2223.live-sass",
+    "ms-python.autopep8",
+    "ms-python.python",
+    "hbenl.vscode-test-explorer",
+    "ms-python.flake8",
+    "ms-python.mypy-type-checker",
+    "samuelcolvin.jinjahtml"
+  ]
+
+}

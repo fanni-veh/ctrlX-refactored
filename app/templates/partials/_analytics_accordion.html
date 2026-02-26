@@ -1,0 +1,339 @@
+<div class="accordion" id="accordion">
+  {% for motor in motors %}
+  <div class="accordion-item" id="accordion_mot_{{ motor.id }}">
+    <h2 class="accordion-header" id="heading{{ motor.id }}">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mot{{ motor.id }}" aria-expanded="false" aria-controls="mot{{ motor.id }}">Motor: {{ motor.machine }} ({{ motor.part }} | {{ motor.serial_number }})</button>
+    </h2>
+    <div id="mot{{ motor.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ motor.id }}">
+      <div class="accordion-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-4">{{motor_information}}</h5>
+          <div class="d-flex gap-2">
+              <button hx-delete="/api/motor/{{motor.id}}" hx-target="#accordion_mot_{{ motor.id }}" hx-confirm="{{are_you_sure}}" class="btn btn-danger" title="{{delete}}"><i class="bi bi-trash"></i></button>                    
+          </div>
+        </div>
+
+        <dl class="row">
+          <dt class="col-4 col-md-3"><strong>{{id}}:</strong></dt>
+          <dd class="col-8 col-md-9">{{ motor.id }}</dd>
+
+          <dt class="col-4 col-md-3"><strong>{{serial_number}}:</strong></dt>
+          <dd class="col-8 col-md-9">{{ motor.serial_number }}</dd>
+
+          <dt class="col-4 col-md-3"><strong>{{part}}:</strong></dt>
+          <dd class="col-8 col-md-9">{{ motor.part }}</dd>
+
+          <dt class="col-4 col-md-3"><strong>{{machine}}:</strong></dt>
+          <dd class="col-8 col-md-9">{{ motor.machine }}</dd>
+
+          <dt class="col-4 col-md-3"><strong>{{client}}:</strong></dt>
+          <dd class="col-8 col-md-9">{{ motor.client }}</dd>
+
+          <dt class="col-4 col-md-3"><strong>{{time_created}}:</strong></dt>
+          <dd class="col-8 col-md-9">{{ motor.time_created }}</dd>
+        </dl>
+
+        {% if motor.plots.health_history %}
+          <h5 class="card-title mb-4">{{health_history}}:</h5>
+          {{ motor.plots.health_history | safe }}
+        {% endif %}
+
+        {% for app in motor.applications %}
+        <div class="accordion" id="accordion_app_{{ app.id }}">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="app_heading{{ app.id }}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#app{{ app.id }}" aria-expanded="false" aria-controls="app{{ app.id }}">{{application}}: {{ app.context_code }}</button>
+            </h2>
+            <div id="app{{ app.id }}" class="accordion-collapse collapse" aria-labelledby="app_heading{{ app.id }}">
+              <div class="accordion-body">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="card-title mb-4">{{application_information}}</h5>
+                  
+                  <div class="d-flex gap-2">
+                    <a href="#app{{ app.id }}" class="btn btn-secondary" title="Direct link"><i class="bi bi-link-45deg"></i></a>
+                    <button hx-get="/htmx/rules/{{ app.id }}" 
+                            hx-target="#rulesEditorContent" 
+                            data-app-id="{{ app.id }}"
+                            class="btn btn-primary rules-editor-btn" 
+                            title="Edit Auto-Action Rules"
+                            onclick="event.stopPropagation(); event.preventDefault(); openRulesEditor(this);">
+                      <i class="bi bi-lightning-fill"></i>
+                    </button>
+                    <button hx-delete="/api/application/{{app.id}}" hx-target="#accordion_app_{{ app.id }}" hx-confirm="{{are_you_sure}}" class="btn btn-danger" title="{{delete}}"><i class="bi bi-trash"></i></button>                    
+                  </div>
+                </div>
+                <dl class="row">
+                  <dt class="col-5 col-md-3"><strong>{{id}}:</strong></dt>
+                  <dd class="col-7 col-md-9">{{ app.id }}</dd>
+
+                  <dt class="col-5 col-md-3"><strong>{{application}}:</strong></dt>
+                  <dd class="col-7 col-md-9">{{ app.context_code }}</dd>
+
+                  <dt class="col-5 col-md-3"><strong>{{recipe}}:</strong></dt>
+                  <dd class="col-7 col-md-9 text-break">{{ app.recipe }}</dd>
+
+                  <dt class="col-5 col-md-3"><strong>{{total_cycles}}:</strong></dt>
+                  <dd class="col-7 col-md-9">{{ app.cycles_amount }}</dd>
+
+                  <dt class="col-5 col-md-3"><strong>{{newest_cycle}}:</strong></dt>
+                  <dd class="col-7 col-md-9">{{ app.newest_cycle }}</dd>
+
+                  <dt class="col-5 col-md-3"><strong>{{time_created}}:</strong></dt>
+                  <dd class="col-7 col-md-9">{{ app.time_created }}</dd>
+                </dl>
+
+                <h5 class="card-title mb-4">{{history}}:</h5>
+                <div class="table-responsive">
+                  <table class="table table-hover table-borderless table-striped text-center align-middle">
+                    <thead class="border-bottom border-white">
+                      <tr>
+                        <th class="fw-bold fs-5">{{job}}</th>
+                        <th class="d-none d-lg-table-cell fw-bold fs-5">{{dataset}}</th>
+                        <th class="fw-bold fs-5">{{state}}</th>
+                        <th class="fw-bold fs-5">{{amount_cycles}}</th>
+                        <th class="fw-bold fs-5">{{time}} (UTC)</th>
+                        <th class="fw-bold fs-5">{{actions}}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for run in app.runs %}
+                      <tr id="run_{{run.id}}">
+                        <td scope="row"><span class="fw-bold">{{ run.task }}</span></td>
+                        <td class="d-none d-lg-table-cell" scope="row"><span>{{ run.dataset_name }}</span></td>
+                        <td scope="row" class="{% if run.state == 'error' %}text-danger{% elif run.state == 'success'%}text-success{% endif %}"><span>{{ run.state_display }}</span></td>
+                        <td scope="row"><span>{{ run.cycles_amount }}</span></td>
+                        <td scope="row" class="mobile-time" data-time="{{ run.last_activity }}" title="{{ run.last_activity }}"><span>{{ run.last_activity }}</span></td>
+                        <td>
+                          <div class="d-flex justify-content-center align-items-center gap-2">
+                            <a href="/report/{{run.id}}" target="_blank" class="btn btn-outline-primary btn-sm" title="{{view_details}}"><i class="bi bi-info-circle"></i></a>
+                            <a href="/export_run/{{ run.id }}" class="btn btn-outline-primary btn-sm" title="{{ download }} (zip)"><i class="bi bi-download"></i></a>
+                            <button type="button" hx-put="/api/run/{{ run.id }}/{{ 'false' if run.disabled else 'true' }}" hx-target="this" hx-swap="outerHTML" class="btn btn-sm {% if run.disabled %}btn-outline-secondary{%else%}btn-outline-success{%endif%}" title="{% if run.disabled %}{{enable}}{%else%}{{disable}}{%endif%}"><i class="bi {% if not run.disabled %}bi-check-circle{%else%}bi-slash-circle{%endif%}"></i></button>
+                            <button type="button" hx-delete="/api/run/{{run.id}}" hx-target="#run_{{run.id}}" hx-swap="outerHTML" class="btn btn-outline-danger btn-sm" hx-confirm="{%if run.task == 'train' %}{{are_you_sure_delete_train_run}}{%else%}{{are_you_sure}}{%endif%}" title="{{delete_run}}"><i class="bi bi-trash"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Rules Editor Modal -->
+<div class="modal fade" id="rulesEditorModal" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable" onclick="event.stopPropagation()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h5 class="modal-title">Auto-Action Rules Editor</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="rulesEditorContent">
+          <div class="text-center p-5">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="saveRulesBtn">Save Rules</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop().split(';').shift();
+    }
+    return null;
+  }
+
+  function openRulesEditor(button) {
+    const appId = button.getAttribute('data-app-id');
+    const modal = document.getElementById('rulesEditorModal');
+    modal.setAttribute('data-app-id', appId);
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+  }
+
+  window.addEventListener("htmx:afterSettle", function (evt) {
+    console.log("htmx:afterSettle event detected");
+    // Skip events not targeting the result container
+    if (evt.detail.target && evt.detail.target.id !== 'result') {
+      return;
+    }
+
+    // Expand accordion based on URL hash
+    const hash = window.location.hash;
+    if (hash) {
+      const app_cord = document.querySelector(hash);
+      if (app_cord) {
+        const mot_cord = app_cord.parentElement.closest(".accordion-collapse");
+        if (mot_cord) {
+          const bsParentCollapse = new bootstrap.Collapse(mot_cord, {
+            toggle: true,
+          });
+        }
+        const bsParentCollapse = new bootstrap.Collapse(app_cord, {
+          toggle: true,
+        });
+
+        app_cord.addEventListener("shown.bs.collapse", function () {          
+          app_cord.scrollIntoView({
+            behavior: "auto",
+            block: "start",
+          });
+        });
+      }
+    }
+
+    // Format time on screens smaller as 992px
+    if (window.innerWidth <= 992) {
+      var language = getCookie('lang') || 'de';
+      var locale = (language === 'de') ? 'de-DE' : 'en-US';
+      document.querySelectorAll('.mobile-time').forEach(el => {
+        const formattedTime = el.dataset.time.replace(" ", "T");
+        const date = new Date(formattedTime);
+        el.textContent = date.toLocaleString(locale, { day: '2-digit', month: '2-digit', year: '2-digit' });
+      });
+    }
+    
+    // Resize Plotly plots after accordion is opened
+    document.querySelectorAll(".accordion-button").forEach(button => {        
+        button.addEventListener("click", function () {          
+            document.querySelectorAll(".js-plotly-plot").forEach(plot => {
+                Plotly.relayout(plot, { autosize: true });
+            });            
+        });
+    }); 
+  });
+
+  // Save rules via HTMX
+  document.getElementById('saveRulesBtn').addEventListener('click', function() {
+    const modal = document.getElementById('rulesEditorModal');
+    const appId = modal.getAttribute('data-app-id');
+    
+    if (!appId) {
+      console.error('Application ID not found in modal');
+      return;
+    }
+    
+    const rulesData = {      
+      actions: {
+        train: [],
+        prediction: []
+      }
+    };
+    
+    // Collect rules for each action type
+    ['train', 'prediction'].forEach(actionType => {
+      const container = document.getElementById(`${actionType}RulesContainer`);
+      if (!container) {
+        console.error(`Container not found: ${actionType}RulesContainer`);
+        return;
+      }      
+      // Get all direct child cards (only cards, not nested elements)
+      const ruleCards = Array.from(container.children).filter(el => 
+        el.classList.contains('card') && el.id.startsWith(`${actionType}_rule_`)
+      );
+      ruleCards.forEach((card) => {
+        // Extract rule index from card ID (e.g., "train_rule_0")
+        const match = card.id.match(new RegExp(`^${actionType}_rule_(\\d+)$`));
+        if (!match) {
+          console.warn('Card ID does not match pattern:', card.id);
+          return;
+        }
+        
+        const ruleIndex = parseInt(match[1]);
+        
+        const rule = {
+          name: card.querySelector(`[name="${actionType}_rule_${ruleIndex}_name"]`)?.value || '',
+          logic: card.querySelector(`[name="${actionType}_rule_${ruleIndex}_logic"]`)?.value || 'AND',
+          filter_used_cycles: card.querySelector(`[name="${actionType}_rule_${ruleIndex}_filter"]`)?.value === 'true',
+          triggers: []
+        };
+        
+        // Collect triggers - now as simple input fields (empty = inactive)
+        const minCyclesInput = card.querySelector(`[name="${actionType}_rule_${ruleIndex}_trigger_min_new_cycles"]`);
+        const intervalInput = card.querySelector(`[name="${actionType}_rule_${ruleIndex}_trigger_interval"]`);
+        
+        if (minCyclesInput?.value) {
+          const value = parseInt(minCyclesInput.value);
+          if (value > 0) {
+            rule.triggers.push({ min_new_cycles: value });
+          }
+        }
+        
+        if (intervalInput?.value) {
+          const value = intervalInput.value.trim();
+          if (value) {
+            rule.triggers.push({ interval: value });
+          }
+        }
+        
+        rulesData.actions[actionType].push(rule);
+      });
+    });
+    
+    // Disable save button during save
+    const saveBtn = document.getElementById('saveRulesBtn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+    
+    // Send to server
+    fetch(`/api/rules/${appId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(rulesData)
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.json().then(data => {
+          bootstrap.Modal.getInstance(document.getElementById('rulesEditorModal')).hide();
+        });
+      } else {
+        return response.json().then(data => {
+          throw new Error(data.detail || 'Failed to save rules');
+        }).catch(err => {
+          // If response is not JSON, use status text
+          if (err instanceof SyntaxError) {
+            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+          }
+          throw err;
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Save error:', error);
+      // Show error in modal
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+      alertDiv.innerHTML = `
+        <strong>Error:</strong> ${error.message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.getElementById('rulesEditorContent').prepend(alertDiv);
+    })
+    .finally(() => {
+      // Re-enable save button
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = 'Save Rules';
+    });
+  });
+</script>

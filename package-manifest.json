@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "id": "mind",
+  "title": "MIND",
+  "description": "Motion Insights and Diagnostics — AI-driven predictive maintenance for industrial drives",
+  "categories": [
+    "diagnostics",
+    "analytics"
+  ],
+  "vendor": {
+    "name": "Maxon Motor AG",
+    "email": "MIND.Noreply@maxongroup.com"
+  },
+  "executable": "mind",
+  "links": {
+    "homepage": "https://www.maxongroup.com"
+  },
+  "services": {
+    "proxyMapping": [
+      {
+        "name": "mind-web",
+        "port": 8000,
+        "type": "http",
+        "url": "/mind/"
+      }
+    ]
+  },
+  "requiredCapabilities": [],
+  "supportedCapabilities": []
+}

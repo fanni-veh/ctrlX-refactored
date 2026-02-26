@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-bs-theme="dark">
+  <head>
+    {% include 'partials/_head.html' %}
+    <link href="{{ url_for('static', path='/css/import.css') }}" rel="stylesheet" />
+  </head>
+
+  <body class="bg-black">
+    {% include 'partials/_header.html' %}
+
+    <div id="dialog-container">
+      <div id="dialog-box">
+        <div id="dialog-content">
+          <h2>{{import_cylces_exis_header}}</h2>
+          <p>{{import_cylces_exis_text}}</p>
+          <div id="dialog-buttons">
+            <button type="button" id="confirm-yes">{{yes}}</button>
+            <button type="button" id="confirm-no">{{no}}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="carousel" class="carousel slide justify-content-center pb-5" data-bs-ride="false">
+      <div class="carousel-inner">
+        <div class="carousel-item active text-center">
+          <form id="uploadForm" class="container text-center" hx-post="/htmx/import" hx-target="#result" hx-encoding="multipart/form-data" hx-trigger="submit">
+            <h1>{{import_cylces_header}}</h1>
+            <p>{{import_cycles_sub}}</p>
+            <div id="file-container">
+              <label for="csvFileInput" class="form-label">{{ select_zip_file }}</label>
+              <input type="file" id="csvFileInput" name="file" class="form-control" accept=".zip" hx-on:change="document.getElementById('nextButton').disabled = false" />
+              <div class="my-3">
+                <small>{{download_example_file}}</small><br />
+                <a href="#">example_import.zip</a>
+              </div>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="add_seen_cycles" name="add_seen_cycles" />
+              <label class="form-check-label" for="add_seen_cycles">{{import_allow_duplications}}</label>
+            </div>
+            <div id="button-container" class="d-flex justify-content-between mt-4">
+              <button type="submit" class="btn btn-primary m-0 w-100" id="nextButton" disabled onclick="new bootstrap.Carousel(document.getElementById('carousel')).next()">{{import_cylces_start}}</button>
+            </div>
+          </form>
+        </div>
+        <div class="carousel-item text-center">
+          <!-- Result Section -->
+          <div id="result">
+            <p id="resultMessage"></p>
+            <div id="loading">
+              <span class="loading-spinner"></span>
+              <span id="loader">{{ loading }} ...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% include 'partials/_footer.html' %}
+  </body>
+</html>

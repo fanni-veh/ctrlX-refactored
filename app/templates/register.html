@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-bs-theme="dark">
+    <head>
+        {% include 'partials/_head.html' %}
+        <link href="{{ url_for('static', path='/css/index.css') }}" rel="stylesheet" />
+    </head>
+    <body class="bg-black">
+        {% include 'partials/_header.html' %}
+        {% with title=create_new_account, button=register, type="register" %}
+        {% include 'partials/_login.html' %}
+        {% endwith %}
+    {% include 'partials/_footer.html' %}
+  </body>
+</html>

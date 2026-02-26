@@ -1,0 +1,51 @@
+$font_family: "Poppins", sans-serif;
+
+$white: white; 
+$body_background: #080710;
+$header_background: #333;
+$button_primary_hover: rgba(255, 255, 255, 0.2);
+$button_primary: rgba(255, 255, 255, 0.13);
+
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+// import.scss
+$dialog_box_background: #28272f;
+$border_color: #ddd;
+
+// form.scss
+$link_color: #c20a13;
+$section_background: rgba(255, 255, 255, 0.1);
+$button_disabled_background: #ddd;
+$button_red: #ff0000;
+$button_green: #4CAF50;
+
+
+// create_motor_model.scss
+$input_placeholder: #e5e5e5;
+$button_text_primary: #080710;
+$input_background: rgba(255, 255, 255, 0.07);
+$button_primary_background: #ffffff;
+
+$table_header_background: #808080;
+$table_row_selected: #144d16;
+
+$step_primary: lightgray;
+$step_active: #dc0100;
+$step_done: #228B22;
+
+$tab_background: #f1f1f1;
+$tab_background_hover: #ddd;
+$tab_background_active: #ccc;
+
+// header.scss
+$snackbar_error_background: #5a0000;
+$snackbar_success_background: #005a29;

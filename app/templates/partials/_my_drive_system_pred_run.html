@@ -1,0 +1,43 @@
+
+{% for app in data %}
+    <tr>
+        <td scope="row"><span class="fw-bold">{{ app.context_code }}</span></td>
+        {% if user_role != "exhibition" %}
+            <td scope="row" class="d-none d-md-table-cell"><span>{{ app.cycles }}</span></td>
+        {% endif %}
+        <td>
+        <div class="d-flex align-items-center justify-content-center">
+            <div class="progress w-100">
+            <div class="progress-bar" style="background-color: {{app.score_color}}; width: {{ app.score }}%; overflow: visible; color:white;">{{ app.score }}%</div>
+            </div>
+        </div>
+        </td>
+        <td><span>{{ app.time }}</span></td>
+        <td>
+            <div class="d-flex align-items-center justify-content-center gap-2 flex-nowrap">
+                <a href="/report/{{app.run_id}}" class="btn btn-outline-primary btn-sm" title="{{view_details}}"><i class="bi bi-info-circle"></i></a>
+                {% if user_role != 'exhibition' %}
+                    <a href="/analytics#app{{app.id}}" class="btn btn-outline-primary btn-sm" title="{{explore_application}}"><i class="bi bi-collection"></i></a>
+                {% endif %}
+                <a href="/predict/{{app.id}}" class="btn btn-outline-success btn-sm" title="{{start_new_prediction}}">
+                <i class="bi bi-play-circle"></i>
+                </a>
+                <button
+                    id="predict-btn-{{app.id}}"
+                    hx-post="api/predict?application_id={{app.id}}&filter_used=true"
+                    hx-trigger="click"
+                    hx-target="#predict-btn-{{app.id}}"
+                    hx-swap="none"
+                    class="btn btn-sm {% if 0 >= app.unused_cycles %}btn-outline-secondary disabled{% else %}btn-outline-success{% endif %}{% if app.train_in_progress %} disabled btn-outline-secondary{% endif %}"
+                    title="{{predict_new_data % app.unused_cycles }}"
+                    {% if app.unused_cycles <= 0 %} disabled {% endif %}>
+                    {% if app.train_in_progress %}
+                    <i class="bi bi-hourglass-split"></i>
+                    {% else %}
+                    <i class="bi bi-lightning-charge"></i>
+                    {% endif %}
+                </button>
+            </div>
+        </td>
+    </tr>
+{% endfor %}

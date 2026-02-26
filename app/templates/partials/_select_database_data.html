@@ -1,0 +1,105 @@
+{% if application_id %}
+<div class="form-check">
+  <input class="form-check-input" type="checkbox" id="filter_matching_apps" name="filter_matching_apps" onchange="filterRowsByApp({{application_id}})" checked />
+  <label class="form-check-label" for="filter_matching_apps">{{show_only_matching_data}}</label>
+</div>
+{% endif %}
+<div id="search-container">
+  <i class="bi bi-search p-2"></i>
+  <input type="text" id="search_input" class="form-control" onkeyup="filter_table()" placeholder="{{search}}..." />
+</div>
+<div class="table-responsive">
+  <table id="db_table" class="table transparent-table border text-start table-hover table-dark">
+    <thead>
+      <tr class="table-header">
+        <th scope="col" onclick="sortTable(0)">{{serial_number}} <i class="bi bi-arrow-down-up ms-1"></i></th>
+        <th scope="col" onclick="sortTable(1)">{{part}} <i class="bi bi-arrow-down-up ms-1"></i></th>
+        <th scope="col" onclick="sortTable(2)">{{application}} <i class="bi bi-arrow-down-up ms-1"></i></th>
+        <th scope="col" onclick="sortTable(3)" class="d-none d-md-table-cell">{{recipe}} <i class="bi bi-arrow-down-up ms-1"></i></th>
+        <th scope="col" style="width:7em;" class="text-center">{{select}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in data %}
+      <tr role="button" onclick="selectRadioButton(this);" data-value="{{row.application_id}}">
+        <td>{{row.serial}}</td>
+        <td>{{row.part}}</td>
+        <td>{{row.application_contextCode}}</td>
+        <td title="{{row.application_recipe}}" class="d-none d-md-table-cell">{{row.application_recipe}}</td>
+        <td class="text-center"><input type="radio" name="db_application" class="select-radio" value="{{row.application_id}}" /></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+  function selectRadioButton(row) {
+    const radioButton = row.querySelector('input[type="radio"]');
+    if (radioButton) {
+      radioButton.checked = true;
+      validateForm(radioButton);
+    }
+  }
+
+  function sortTable(colIndex) {
+    const table = document.getElementById("db_table");
+    const tbody = table.tBodies[0];
+    const rows = Array.from(tbody.rows);
+    const asc = table.dataset.sortOrder !== "asc";
+    rows.sort((a, b) => {
+      const x = a.cells[colIndex].innerText.trim().toLowerCase();
+      const y = b.cells[colIndex].innerText.trim().toLowerCase();
+      return asc ? x.localeCompare(y, undefined, {numeric:true}) : y.localeCompare(x, undefined, {numeric:true});
+    });
+    rows.forEach(r => tbody.appendChild(r));
+    table.dataset.sortOrder = asc ? "asc" : "desc";
+  }
+
+  function filterRowsByApp(app_id) {
+    const checkbox = document.getElementById("filter_matching_apps");
+    document.querySelectorAll("#db_table tbody tr").forEach((row) => {
+      row.style.display = checkbox.checked && row.getAttribute("data-value") !== String(app_id) ? "none" : "";
+    });
+  }
+
+  /**
+   * Function that:
+   *      - Shows only table rows, they have a matching with the search-value.
+   *
+   * Trigger: When input of search_input is changed.
+   */
+  function filter_table() {
+    var input, filter, table, tr, td, i, j, txtValue;
+    input = document.getElementById("search_input");
+    filter = input.value.toUpperCase();
+    table = document.getElementById("db_table");
+    tr = table.getElementsByTagName("tr");
+
+    for (i = 1; i < tr.length; i++) {
+      // Start from 1 to skip header row
+      tr[i].style.display = "none"; // Hide rows by default
+      td = tr[i].getElementsByTagName("td");
+      for (j = 0; j < td.length - 1; j++) {
+        // Loop through all columns except the last one
+        if (td[j]) {
+          txtValue = td[j].textContent || td[j].innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+            break; // Stop checking after finding a match
+          }
+        }
+      }
+    }
+
+    // Ensure that rows with checked checkboxes are always visible
+    var checkboxes = document.querySelectorAll(".select-radio");
+    checkboxes.forEach(function (checkbox) {
+      if (checkbox.checked) {
+        checkbox.closest("tr").style.display = "";
+      }
+    });
+  }
+  {% if application_id %}
+  filterRowsByApp("{{application_id}}");
+  {% endif %}
+</script>

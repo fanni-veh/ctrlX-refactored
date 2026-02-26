@@ -1,0 +1,129 @@
+name: mind
+title: MIND - Motion Insights and Diagnostics
+version: '1.1.0'
+summary: AI-driven predictive maintenance for industrial drives
+description: |
+  MIND (Motion Insights and Diagnostics) provides real-time MQTT data ingestion,
+  machine learning-based cycle classification (GOOD/BAD), and a web-based
+  dashboard for analyzing motor/drive performance.
+
+grade: devel        # Change to 'stable' for production release
+confinement: devmode  # Change to 'strict' for production; requires all plugs to be declared
+
+base: core22
+
+# Uncomment when building for the actual ctrlX Core hardware (ARM64).
+# Leave commented for local x86-64 development builds.
+# architectures:
+#   - build-on: [amd64, arm64]
+#     build-for: arm64
+
+apps:
+  mind:
+    command: bin/start.sh
+    daemon: simple
+    restart-condition: on-failure
+    restart-delay: 5s
+    plugs:
+      - network       # Outbound connections: PostgreSQL, MQTT broker
+      - network-bind  # Bind to port 8000 for the web UI
+
+parts:
+  mind-app:
+    plugin: python
+    source: .
+
+    # PREREQUISITE: Generate this file from Poetry before running 'snapcraft':
+    #   poetry export --without dev --without-hashes -f requirements.txt -o requirements.txt
+    python-requirements:
+      - requirements.txt
+
+    build-packages:
+      - gcc
+      - python3-dev
+      - python3-pip
+
+    override-build: |
+      craftctl default
+
+      # ── Copy application source ──────────────────────────────────────────────
+      cp -r "${CRAFT_PART_SRC}/app"             "${CRAFT_PART_INSTALL}/app"
+      cp    "${CRAFT_PART_SRC}/model_config.yaml" "${CRAFT_PART_INSTALL}/model_config.yaml"
+      cp -r "${CRAFT_PART_SRC}/alembic"         "${CRAFT_PART_INSTALL}/alembic"
+      cp    "${CRAFT_PART_SRC}/alembic.ini"     "${CRAFT_PART_INSTALL}/alembic.ini"
+      cp    "${CRAFT_PART_SRC}/pyproject.toml"  "${CRAFT_PART_INSTALL}/pyproject.toml"
+
+      # ── Pre-compile SCSS → CSS at build time ─────────────────────────────────
+      # This avoids the runtime sass.compile() call in main.py writing to the
+      # read-only $SNAP filesystem. After this, the 'css/' directory is baked
+      # into the snap and no SASS compilation is needed at runtime.
+      #
+      # NOTE: You should also remove (or guard with a flag) the sass.compile()
+      # call at the top of app/main.py so it is skipped when running inside
+      # the snap.  The simplest approach is to check an env var:
+      #
+      #   if not os.getenv("SNAP"):
+      #       sass.compile(dirname=('app/static/scss', 'app/static/css'), ...)
+      #
+      pip install libsass
+      python3 -c "
+      import sass, os
+      src = '${CRAFT_PART_SRC}/app/static/scss'
+      dst = '${CRAFT_PART_INSTALL}/app/static/css'
+      os.makedirs(dst, exist_ok=True)
+      sass.compile(dirname=(src, dst), output_style='compressed')
+      print('SASS compiled successfully')
+      "
+
+      # ── Create the startup script ─────────────────────────────────────────────
+      mkdir -p "${CRAFT_PART_INSTALL}/bin"
+      cat > "${CRAFT_PART_INSTALL}/bin/start.sh" << 'STARTSCRIPT'
+      #!/bin/bash
+      set -e
+
+      # ── Snap-aware writable directories ───────────────────────────────────────
+      # $SNAP      = read-only snap root (your installed app files)
+      # $SNAP_DATA = persistent writable storage (survives updates)
+      # $SNAP_COMMON = writable, shared across snap revisions
+
+      export LOG_DIR="${SNAP_DATA}/logs"
+      export RULES_DIR="${SNAP_DATA}/rules"
+      export PROMETHEUS_MULTIPROC_DIR="${SNAP_DATA}/prometheus"
+
+      mkdir -p "${LOG_DIR}"
+      mkdir -p "${RULES_DIR}"
+      mkdir -p "${PROMETHEUS_MULTIPROC_DIR}"
+
+      # ── Work from the snap root so relative paths resolve correctly ────────────
+      # app/static, app/templates, model_config.yaml are all relative to here.
+      cd "${SNAP}"
+
+      # ── Initialise the database ────────────────────────────────────────────────
+      # create_all is idempotent: only creates tables that don't exist yet.
+      # This works cleanly on a fresh SQLite file without needing migration history.
+      echo "Initialising database..."
+      python -c "
+import asyncio
+from app.database import session_manager
+from app.models import Base
+
+async def init_db():
+    session_manager.init_db()
+    async with session_manager.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    await session_manager.close()
+
+asyncio.run(init_db())
+"
+
+      # ── Start the application ─────────────────────────────────────────────────
+      exec gunicorn app.main:app \
+        --worker-class uvicorn.workers.UvicornWorker \
+        --workers 2 \
+        --bind 0.0.0.0:8000 \
+        --timeout 120 \
+        --access-logfile "${LOG_DIR}/access.log" \
+        --error-logfile  "${LOG_DIR}/error.log"
+      STARTSCRIPT
+
+      chmod +x "${CRAFT_PART_INSTALL}/bin/start.sh"

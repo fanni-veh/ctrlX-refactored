@@ -1,0 +1,163 @@
+<div class="row">
+  <div class="col">
+    <h1>{%if data.run.train %}{{results_summary}}{%else%}{{prediction_results_summary}}{% endif %}</h1>
+    <p>{{report_subtitle}}</p>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-body text-start">
+        <h5 class="card-title mb-4">{{motor_information}}</h5>
+        <dl class="row">
+          <dt class="col-sm-4"><strong>{{id}}:</strong></dt>
+          <dd class="col-sm-8">{{ data.motor.id }}</dd>
+
+          <dt class="col-sm-4"><strong>{{serial_number}}:</strong></dt>
+          <dd class="col-sm-8">{{ data.motor.serial_number }}</dd>
+
+          <dt class="col-sm-4"><strong>{{part}}:</strong></dt>
+          <dd class="col-sm-8">{{ data.motor.part }}</dd>
+
+          <dt class="col-sm-4"><strong>{{machine}}:</strong></dt>
+          <dd class="col-sm-8">{{ data.motor.machine }}</dd>
+
+          <dt class="col-sm-4"><strong>{{client}}:</strong></dt>
+          <dd class="col-sm-8">{{ data.motor.client }}</dd>
+
+          <dt class="col-sm-4"><strong>{{time_created}}:</strong></dt>
+          <dd class="col-sm-8">{{ data.motor.time_created }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-body text-start">
+        <h5 class="card-title mb-4">{{application_information}}</h5>
+        <dl class="row">
+          <dt class="col-sm-4"><strong>{{id}}:</strong></dt>
+          <dd class="col-sm-8">{{ data.application.id }}</dd>
+
+          <dt class="col-sm-4"><strong>{{application}}:</strong></dt>
+          <dd class="col-sm-8">{{ data.application.context_code }}</dd>
+
+          <dt class="col-sm-4"><strong>{{recipe}}:</strong></dt>
+          <dd class="col-sm-8 text-break">{{ data.application.recipe }}</dd>
+
+          <dt class="col-sm-4"><strong>{{time_created}}:</strong></dt>
+          <dd class="col-sm-8">{{ data.application.time_created }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col mb-3">
+    <div class="card">
+      <div class="card-body text-start">
+        <h5 class="card-title mb-4">{{run_information}} ({% if data.run.train %}{{menu_train}}{%else%}{{menu_predict}}{%endif%})</h5>
+        <dl class="row">
+          <dt class="col-sm-3"><strong>{{id}}:</strong></dt>
+          <dd class="col-sm-9">{{ data.run.id }}</dd>
+
+          <dt class="col-sm-3"><strong>{{time}} (UTC):</strong></dt>
+          <dd class="col-sm-9">{{ data.run.last_activity }}</dd>
+
+          <dt class="col-sm-3"><strong>{{job}}:</strong></dt>
+          <dd class="col-sm-9">{{ data.run.task }}</dd>
+
+          <dt class="col-sm-3"><strong>{{state}}:</strong></dt>
+          <dd class="col-sm-9">{{ data.run.state }}</dd>
+
+          <dt class="col-sm-3"><strong>{{cycles}}:</strong></dt>
+          <dd class="col-sm-9">{{ data.run.cycle_ids }}</dd>
+
+          <dt class="col-sm-3"><strong>{{dataset_name}}:</strong></dt>
+          <dd class="col-sm-9">{{ data.run.dataset_name }}</dd>
+
+          {% if data.run.state == 'error' %}
+            <dt class="col-sm-3"><strong>{{error_message}}:</strong></dt>
+            <dd class="col-sm-9">{{ data.run.message }}</dd>
+          {% else %}
+            {% if data.run.train %}
+              <dt class="col-sm-3"><strong>{{models}}:</strong></dt>
+              <dd class="col-sm-9">{{ data.run.train.models |length }}</dd>
+
+              <dt class="col-sm-3"><strong>{{used_time}}:</strong></dt>
+              <dd class="col-sm-9">{{ data.run.train.used_total_time_s }} s</dd>
+
+              <dt class="col-sm-3"><strong>{{count_good_cycles}}:</strong></dt>
+              <dd class="col-sm-9">{{ data.run.train.amount_good_cycles }}</dd>
+
+              <dt class="col-sm-3"><strong>{{count_bad_cycles}}:</strong></dt>
+              <dd class="col-sm-9">{{ data.run.train.amount_bad_cycles }}</dd>
+            {% else %}
+              <dt class="col-sm-3"><strong>{{used_train_run}}:</strong></dt>
+              <dd class="col-sm-9"><a href="/report/{{ data.run.used_train_run_id }}">{{ data.run.used_train_run_id }}</a></dd>
+
+              <dt class="col-sm-3"><strong>{{health_state}}:</strong></dt>
+              <dd class="col-sm-9 text-center"><span>{{ data.run.prediction.health_text }}</span>
+                <div class="mt-2 d-flex align-items-center justify-content-center">
+                    <div class="progress w-100">
+                      <div class="progress-bar" style="background-color: {{ data.run.prediction.health_color }}; width: {{data.run.prediction.health_score}}%;overflow: visible; color:white;">{{ data.run.prediction.health_score }}%</div>
+                    </div>
+                </div>
+              </dd>
+            {% endif %}
+          {% endif %}
+        </dl>
+
+        {% if user_role != 'exhibition' %}
+        <div class="row">
+          <div id="result_plots">
+            {% if data.run.prediction %} 
+              {% for plot in data.run.prediction.plots.values() %} 
+                {{ plot | safe }} 
+              {% endfor %} 
+            {% elif data.run.train %}
+              <h5>{{models}}:</h5>
+              <div class="accordion" id="accordion">
+                {% for model, model_data in data.run.train.models.items() %}
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="heading{{ loop.index }}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" aria-controls="collapse{{ loop.index }}">{{model}}</button>
+                  </h2>
+                  <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading{{ loop.index }}">
+                    <div class="accordion-body">
+                      <dl class="row">
+                        <dt class="col-sm-3"><strong>{{id}}:</strong></dt>
+                        <dd class="col-sm-9">{{ model_data.id }}</dd>
+
+                        <dt class="col-sm-3"><strong>Accuracy:</strong></dt>
+                        <dd class="col-sm-9">{{model_data.accuracy}}</dd>
+
+                        <dt class="col-sm-3"><strong>F1:</strong></dt>
+                        <dd class="col-sm-9">{{model_data.f1}}</dd>
+
+                        <dt class="col-sm-3"><strong>Recall:</strong></dt>
+                        <dd class="col-sm-9">{{model_data.recall}}</dd>
+
+                        <dt class="col-sm-3"><strong>Balanced-Accuracy:</strong></dt>
+                        <dd class="col-sm-9">{{model_data.balanced_accuracy}}</dd>
+
+                        <dt class="col-sm-3"><strong>Precision:</strong></dt>
+                        <dd class="col-sm-9">{{model_data.precision}}</dd>
+
+                        <dt class="col-sm-3"><strong>Matthews-Corrcoef:</strong></dt>
+                        <dd class="col-sm-9">{{model_data.matthews_cor}}</dd>
+                      </dl>
+                      {% for plot in model_data.plots.values() %} {{ plot | safe }} {% endfor %}
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

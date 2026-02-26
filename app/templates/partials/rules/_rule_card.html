@@ -1,0 +1,59 @@
+<div class="card mb-3" id="{{ data.action_type }}_rule_{{ data.rule_index }}">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h6 class="mb-0">Rule #{{ data.rule_index + 1 }}</h6>
+    <button class="btn btn-sm btn-danger"
+            onclick="document.getElementById('{{ data.action_type }}_rule_{{ data.rule_index }}').remove(); event.stopPropagation();">
+      <i class="bi bi-trash"></i> Delete Rule
+    </button>
+  </div>
+  <div class="card-body">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Rule Name</label>
+        <input type="text" 
+               class="form-control" 
+               name="{{ data.action_type }}_rule_{{ data.rule_index }}_name"
+               value="{{ data.rule.name or '' }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Logic</label>
+        <select class="form-select"
+                name="{{ data.action_type }}_rule_{{ data.rule_index }}_logic">
+          <option value="AND" {% if data.rule.logic == 'AND' %}selected{% endif %}>AND (all must match)</option>
+          <option value="OR" {% if data.rule.logic == 'OR' %}selected{% endif %}>OR (any must match)</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Filter Used Cycles</label>
+        <select class="form-select"
+                name="{{ data.action_type }}_rule_{{ data.rule_index }}_filter">
+          <option value="true" {% if data.rule.filter_used_cycles != false %}selected{% endif %}>Yes</option>
+          <option value="false" {% if data.rule.filter_used_cycles == false %}selected{% endif %}>No</option>
+        </select>
+      </div>
+    </div>
+
+    <h6 class="mb-2">Triggers <small class="text-muted">(Leave empty to disable)</small></h6>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Minimum New Cycles</label>
+        <input type="number" 
+               class="form-control" 
+               min="1" 
+               name="{{ data.action_type }}_rule_{{ data.rule_index }}_trigger_min_new_cycles"
+               value="{{ data.rule.triggers.min_new_cycles if data.rule.triggers.min_new_cycles else '' }}"
+               placeholder="e.g., 10 (empty = inactive)">
+        <small class="form-text text-muted">Trigger when at least this many new cycles are available</small>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Time Interval</label>
+        <input type="text" 
+               class="form-control" 
+               name="{{ data.action_type }}_rule_{{ data.rule_index }}_trigger_interval"
+               value="{{ data.rule.triggers.interval if data.rule.triggers.interval else '' }}"
+               placeholder="e.g., 1h, 30m, 1d (empty = inactive)">
+        <small class="form-text text-muted">Format: 1d (day), 1h (hour), 30m (minutes)</small>
+      </div>
+    </div>
+  </div>
+</div>

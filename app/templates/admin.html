@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-bs-theme="dark">
+  <head>
+    {% include 'partials/_head.html' %}
+    <link href="{{ url_for('static', path='/css/import.css') }}" rel="stylesheet" />
+  </head>
+
+  <body class="bg-black pb-5">
+    {% include 'partials/_header.html' %}
+
+    <div class="container">
+      <div class="text-center">
+        <h1>Admin Panel</h1>
+        <p>Manage users, change settings, but don't be evil!</p>
+      </div>
+      <!-- Table of users -->
+      
+      <div class="mb-3 table-responsive">
+        <h3>Users</h3>
+        <table class="table table-hover table-borderless align-middle text-center mb-0 rounded-2 overflow-hidden">
+          <thead class="border-bottom border-white">
+            <tr>
+              <th scope="col" class="fw-semibold">Username</th>
+              <th scope="col" class="fw-semibold">Role</th>
+              <th scope="col" class="fw-semibold">Motors</th>
+              <th scope="col" class="fw-semibold">Last Login</th>
+              <th scope="col" class="fw-semibold">Disabled</th>
+              <th scope="col" class="fw-semibold">Actions</th>
+            </tr> 
+          </thead>
+          <tbody>
+          {% for user in users %}
+            <tr>
+              <td class="text-start">{{ user.email }}<input type="hidden" name="user_id" value="{{ user.id }}"></td>
+              <td>
+                <select class="form-select form-select-sm" name="role">
+                  <option value="admin" {{ "selected" if user.role=="admin" else "" }}>admin</option>
+                  <option value="guest" {{ "selected" if user.role=="guest" else "" }}>guest</option>
+                  <option value="service" {{ "selected" if user.role=="service" else "" }}>service</option>
+                  <option value="exhibition" {{ "selected" if user.role=="exhibition" else "" }}>exhibition</option>
+                </select>
+              </td>
+              <td>
+                <input type="text" class="form-control form-control-sm" name="motors"
+                      value="{{ user.motors | join(', ') if user.motors else '' }}">
+              </td>
+              <td>{{ user.last_login if user.last_login else 'Never' }}</td>
+              <td>
+                <input type="hidden" name="disabled" value="false">
+                <input type="checkbox" name="disabled" value="true" {% if user.disabled %}checked{% endif %}>
+              <td>
+                <button 
+                    class="btn btn-success btn-sm"
+                    hx-post="/update-user"
+                    hx-target="#updateUserMessage"
+                    hx-swap="innerHTML"
+                    hx-include="closest tr">
+                  Update
+                </button>
+              </td>
+            </tr>
+          {% endfor %}
+            <!-- User rows will be dynamically inserted here -->
+          </tbody>
+        </table>
+        <div id="updateUserMessage" class="mt-2"></div>
+      </div>
+     
+      <!-- config.yml content to edit -->
+      <div class="mb-3">
+        <h3>Global Pipeline Configuration (YAML)</h3>
+        <textarea class="form-control bg-dark text-white" name="pipelineYml" id="pipelineYml" rows="50">{{ model_config | safe }}</textarea>
+        <div class="mt-3">
+        <button class="btn btn-success" hx-post="/update-config" hx-target="#updateMessage" hx-include="#pipelineYml" hx-swap="innerHTML">Save Configuration</button>
+        </div>
+        <!-- Response message placeholder -->
+        <div id="updateMessage" class="mt-2"></div>
+      </div>
+    </div>   
+
+    {% include 'partials/_footer.html' %}
+  </body>
+</html>

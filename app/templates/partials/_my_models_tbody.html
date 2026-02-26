@@ -1,0 +1,22 @@
+{% if data %} {% for item in data %}
+<tr>
+  <td>{{ item.application_context_code }}</td>
+  <td class="d-none d-md-table-cell">{{ item.model_name }}</td>
+  {% if user_role != 'exhibition' %}
+  <td>{{ item.model_count }}</td>
+  {% endif %}
+  <td>
+    <div class="d-flex align-items-center justify-content-center gap-2 flex-nowrap">
+      <a href="/report/{{item.run_id}}" class="btn btn-outline-primary btn-sm" title="{{view_details}}"><i class="bi bi-info-circle"></i></a>
+      {% if user_role != 'exhibition' %}
+      <a href="/analytics#app{{item.application_id}}" class="btn btn-outline-primary btn-sm" title="{{explore_application}}"><i class="bi bi-collection"></i></a>
+      {% endif %}
+      <a href="/predict/{{item.application_id}}" class="btn btn-outline-success btn-sm" title="{{start_new_prediction}}"><i class="bi bi-play-circle"></i></a>
+    </div>
+  </td>
+</tr>
+{% endfor %} {% else %}
+<tr>
+  <td colspan="4"><i>{{ currently_no_trainings }}</i></td>
+</tr>
+{% endif%}

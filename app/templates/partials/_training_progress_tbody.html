@@ -1,0 +1,21 @@
+{% if data %} {% for item in data %}
+<tr>
+  {% if item.part and item.serial %}
+  <td>{{ item.machine }}</td>
+  <td>{{ item.part}} / {{ item.serial}}</td>
+  <td>{{ item.application}}</td>
+  {% else %}
+  <td colspan="3"><i>{{ analyze }}</i></td>
+  {% endif %}
+  <td>{{ item.formatted_time}}</td>
+  <td>
+    <div class="progress">
+      <div class="progress-bar progress-bar-blue" style="width: {{ item.progress }}%"></div>
+    </div>
+  </td>
+</tr>
+{% endfor %} {% else %}
+<tr>
+  <td colspan="6"><i>{{ currently_no_trainings }}</i></td>
+</tr>
+{% endif%}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" data-bs-theme="dark">
+  <head>
+    {% include 'partials/_head.html' %}
+    <script src="{{ url_for('static', path='plotly.min.js') }}"></script>
+  </head>
+  <body class="bg-black pb-5">
+    {% include 'partials/_header.html' %}
+    <div class="container">
+      <div class="text-center">
+        <h1>{{menu_data_explorer}}</h1>
+        <p>{{menu_data_explorer_sub}}</p>
+      </div>
+      
+      <div id="result" class="p-4 text-center" hx-get="/htmx/analytics" hx-trigger="load" hx-target="this" hx-swap="outerHTML">
+          <div>
+            <span class="loading-spinner"></span>
+            <span id="loader">{{ loading }} ...</span>
+          </div>            
+      </div>
+    </div>
+    {% include 'partials/_footer.html' %}
+  </body>
+</html>

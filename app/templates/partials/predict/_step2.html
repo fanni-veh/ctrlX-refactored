@@ -1,0 +1,419 @@
+<div class="row">
+  <div class="col">
+    <h1>{{preview}}</h1>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
+    <h3>{{general_information}}</h3>
+  </div>
+</div>
+<div class="row d-flex align-items-stretch mb-3">
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-body text-start">
+        <h5 class="card-title mb-4">{{motor_information}}</h5>
+        <dl class="row">
+          <dt class="col-sm-4"><strong>{{id}}:</strong></dt>
+          <dd class="col-sm-8">{{data.motor.id}}</dd>
+
+          <dt class="col-sm-4"><strong>{{motor_serial}}:</strong></dt>
+          <dd class="col-sm-8">{{data.motor.serial}}</dd>
+
+          <dt class="col-sm-4"><strong>{{part}}:</strong></dt>
+          <dd class="col-sm-8">{{data.motor.part}}</dd>
+
+          <dt class="col-sm-4"><strong>{{machine}}:</strong></dt>
+          <dd class="col-sm-8">{{data.motor.machine}}</dd>
+
+          <dt class="col-sm-4"><strong>{{client}}:</strong></dt>
+          <dd class="col-sm-8">{{data.motor.client}}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-body text-start">
+        <h5 class="card-title mb-4">{{application_information}}</h5>
+        <dl class="row">
+          <dt class="col-sm-3"><strong>{{id}}:</strong></dt>
+          <dd class="col-sm-9">{{data.application.id}}</dd>
+
+          <dt class="col-sm-3"><strong>{{application}}:</strong></dt>
+          <dd class="col-sm-9">{{data.application.context_code}}</dd>
+
+          <dt class="col-sm-3"><strong>{{recipe}}:</strong></dt>
+          <dd class="col-sm-9">{{data.application.recipe}}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
+    <h3>{{preview_and_select}}</h3>
+    <p>{{verify_cycles_remove_outliers}}</p>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-12">
+    {% if (data.plots.scatter | length) > 0 %}
+    <div id="plots">
+    {% for key, plot in data.plots.scatter.items() %}
+      {% set label_idx = -1 %}
+      <div class="text-start fb-4 pe-5">
+        <div class="text-primary">{{quickfilters}}</div>
+        <button type="button" class="btn btn-outline-primary me-1" aria-pressed="false" onclick="openFilter(this)" data-key="used" data-chart="{{label_idx}}" id="btn_used_{{label_idx}}">{{used}}</button>
+        <button type="button" class="btn btn-outline-primary me-1" aria-pressed="false" onclick="openFilter(this)" data-key="outlier" data-chart="{{label_idx}}" id="btn_outlier_{{label_idx}}">{{auto_outlier}}</button>
+        <button type="button" class="btn btn-outline-primary me-1" aria-pressed="false" onclick="openFilter(this)" data-key="cycle_start_timestamp" data-chart="{{label_idx}}" id="timeRangeButton_{{label_idx}}">{{timerange}}</button>
+
+        <div id="parent_extended_filters_{{label_idx}}"></div>
+        
+      </div>      
+      <div class="text-end fb-4 text-warning pe-5">{{deselect_outliers}}</div>
+      {{plot | safe }} 
+    {% endfor %}</div>
+  </div>
+  <div class="col-lg-12">
+    <div class="row">
+      <div class="col-lg-12">
+        <span class="fs-3">{{summary}}</span>
+        <div class="table-responsive">
+          <table id="cycle_table" class="table table-borderless text-start bg-transparent">
+            <tbody>
+              <tr>
+                <td>{{original_cycles_count}}</td>
+                <td id="cycles_orig_amount" class="text-end"></td>
+              </tr>
+              <tr>
+                <td>{{cycles_removed}}</td>
+                <td id="cycles_count_removed" class="text-end"></td>
+              </tr>
+              <tr>
+                <td>{{remaining_cylces_for_prediction}}</td>
+                <td id="cycles_count_remaining" class="text-end fw-bold"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <span class="text-danger d-block pb-5">{{no_cycles_available}}</span>
+  {% endif %}
+  </div>
+</div>
+<div class="row">
+  <div class="col">
+    <span class="fs-3">{{ai_model}}</span>
+    <p>{{chose_ai_to_predict}}</p>
+    {% if train_app %}
+    <p class="fs-4 text-danger">{{use_foreign_applikation}}: {{train_app.context_code}}</p>
+    <span class="text-danger">{{warn_use_foreign_applikation}}</span>
+    {%endif%}
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-12 m-1">
+    <div class="table-responsive">
+      <table id="run_table" class="table transparent-table border text-center table-hover table-dark">
+        <thead>
+          <tr class="table-header">
+            <th scope="col">{{name}}</th>
+            <th scope="col">{{amount_models}}</th>
+            <th scope="col">{{accuracy}}</th>
+            <th scope="col">{{time}}</th>
+            <th scope="col" width="100px">{{select}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if not train_runs %}
+          <tr role="button">
+            <td colspan="5">{{no_models_found}}</td>
+          </tr>
+          {% else %} {% for run in train_runs %}
+          <tr role="button" onclick="selectRadioButton(this);">
+            <td><a href="/report/{{run.id}}" target="_blank">{{run.datasetname}}</a></td>
+            <td>{{run.count_models}}</td>
+            <td>{{run.accuracy}}</td>
+            <td>{{run.time}}</td>
+            <td><input type="radio" name="train_app_id" class="select-radio" value="{{run.id}}" {% if loop.first %}checked{% endif %} /></td>
+          </tr>
+          {% endfor %} {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-12 m-1">
+    <div class="form-group text-start">
+      <div class="form-group">
+        <label for="dataset_name" class="form-label">{{name_of_prediction}}:</label>
+        <input type="text" id="dataset_name" name="dataset_name" hx-on::after-request="btnStartTask.disabled = validationMessage.querySelector('.text-danger') !== null" class="form-control" hx-get="/htmx/validate-predict" hx-trigger="load, input changed, blur" hx-target="#validation-message" hx-include="[name='dataset_name']" hx-params="*" hx-vals='js:{"application_id": application_id, "train_app_id": train_app_id, "cycles_count_unknown": summary_cycles["unknown"]}' placeholder="pred_{{data.motor.machine}}_{{time_display_short}}" value="pred_{{data.motor.machine}}_{{time_display_short}}" />
+        <div id="validation-message"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-12 d-flex justify-content-between mt-4 p-0 button-container">
+    <button class="btn btn-outline-primary mx-2 w-50" type="button" data-bs-target="#carousel" data-bs-slide="prev">{{previous}}</button>
+    <button
+      id="btnStartTask"
+      hx-post="/htmx/predict/run"
+      hx-target="#processing"
+      hx-vals='js:{
+          "unknown_cycles": getSelectedSeries(document.getElementById("plot_cycles_-1")), 
+          "cycles_to_remove": Object.values(hiddenSeries).flat(),
+          "dataset_name": document.getElementById("dataset_name").value.trim() || document.getElementById("dataset_name").placeholder, 
+          {% if data.application.id %}"application_id": {{ data.application.id }},{% endif %}
+          "train_run_id": document.querySelector("input[name=train_app_id]:checked")?.value || ""
+      }'
+      class="nextButton btn btn-success mx-2 w-50"
+      type="button"
+      onclick="carousel.next()">
+      {{start_prediction}}
+    </button>
+  </div>
+</div>
+
+{% include 'partials/_numeric_filter.html' with context %}
+{% include 'partials/_text_filter.html' with context %}
+
+<script>
+  var summary_cycles = { original: {{data.statistics.cycles.unknown}}, unknown: {{data.statistics.cycles.unknown}}, bad: {{data.statistics.cycles.bad}}, good: {{data.statistics.cycles.good}} };
+  var application_id = "{{ data.application.id }}";
+  var train_app_id = "{% if train_app %}{{train_app.id}}{% endif %}";
+  var btnStartTask = document.getElementById('btnStartTask');
+  var validationMessage = document.getElementById('validation-message');
+  var hiddenSeries = {};
+
+  function updateSummary() {
+    const original = summary_cycles["original"];
+    const unknown_amount = summary_cycles["unknown"];
+    const remaining = unknown_amount;
+    const removed_amount = original - remaining;
+
+    document.getElementById("cycles_orig_amount").innerText = original;
+    document.getElementById("cycles_count_removed").innerText = removed_amount;
+    document.getElementById("cycles_count_remaining").innerText = remaining;
+
+    const table = document.getElementById("dataset_name");
+    htmx.trigger(table, "blur");
+  }
+
+  var global_filters = new Map();
+  function updateTimeSeries(id) {
+    setTimeout(() => {
+      const plot = document.getElementById(id);
+      var label_id = plot.layout.meta['label_id'];
+      if (plot) {    
+        var filter_entries = new Map();
+        const skip_keys = ["cycle_end_timestamp"]; // skip keys    
+
+        // get all customdata and make filter-buttons        
+        plot.data.forEach(trace => {
+          trace.customdata.forEach(customdata => {
+            Object.entries(customdata).forEach(([key, value]) => {
+              if (skip_keys.includes(key)) {
+                return;
+              }
+              
+              if (typeof value === "number") {
+                if (!filter_entries.has(key)) {
+                  filter_entries.set(key, { active:false, type:'numeric', min: value, max: value, values:[], user: {} });
+                } 
+                const entry = filter_entries.get(key);
+                entry.min = Math.min(entry.min, value);
+                entry.max = Math.max(entry.max, value);
+                entry.values.push(value);
+                             
+              } else if (typeof value === "string") {
+                if (!filter_entries.has(key)) {
+                  filter_entries.set(key, { active:false, type:'string', user: new Set(), values: new Set() });
+                }
+                filter_entries.get(key).values.add(value);
+              } else if (typeof value === "boolean") {                
+                if (!filter_entries.has(key)) {
+                  filter_entries.set(key, { active:false, type:'boolean', user: {}, values: new Set() });
+                }
+                filter_entries.get(key).values.add(value);
+              } else {
+                console.warn("Unknown datatype for filters: ", typeof(value), value);
+              }
+            });
+          });
+        });    
+
+        // Remove filters without variance
+        filter_entries.forEach((entry, key) => {
+          if (entry.type === 'numeric' && entry.min === entry.max) {
+            filter_entries.delete(key);
+          } else if (entry.type === 'string' && entry.values.size <= 1) {
+            filter_entries.delete(key);
+          }
+        }); 
+
+        
+        if(filter_entries.size > 0){
+          addFilterButton(label_id, filter_entries);       
+        }
+        global_filters.set(label_id, filter_entries);        
+        monitorVisibilityChanges(plot);
+      } else {
+        console.error("Plotly-Element not found!");
+      }
+    }, 100);
+  }
+
+  var current_filter;
+  function openFilter(button) {
+      var filter_data = global_filters.get(parseInt(button.dataset.chart)).get(button.dataset.key);
+      current_filter = { plot_idx: button.dataset.chart, key: button.dataset.key, data: filter_data };
+      
+      if (filter_data.type === 'numeric') {
+          openNumericFilter(button, filter_data);
+      } 
+      else if (filter_data.type === 'string') {
+          openTextFilter(button, filter_data);          
+      }        
+      else if (filter_data.type === 'boolean') {
+          current_filter.data.active = !current_filter.data.active; // toggle the active flag
+          button.setAttribute('aria-pressed', current_filter.data.active);
+          button.classList.toggle('active', current_filter.data.active);
+
+          toggle_series(parseInt(current_filter.plot_idx));
+      }        
+  }
+
+  function addFilterButton(target_plot, filters) {
+    //var target_plot = label_id;
+    const element = document.getElementById("parent_extended_filters_"+target_plot);
+
+    const div = document.createElement("div");
+    div.className = "mt-2 text-secondary";
+    div.setAttribute("role", "button");
+    div.setAttribute("data-bs-toggle", "collapse");
+    div.setAttribute("data-bs-target", `#extraFilters_${target_plot}`);
+    div.setAttribute("aria-expanded", "false");
+    div.setAttribute("aria-controls", `extraFilters_${target_plot}`);
+    div.textContent = "{{extended_filters}}";
+
+    element.appendChild(div);
+
+    const btn_container = document.createElement("div");
+    btn_container.className = "collapse mt-2";
+    btn_container.id ="extraFilters_"+target_plot;
+    element.appendChild(btn_container);
+
+    // Create a button for each filter-key
+    filters.forEach((value, key) => {
+      // skip 'cycle_start_timestamp' cause it already a quick-filter-button
+      if (key !== 'cycle_start_timestamp' && key !== 'used' && key !== 'outlier') {      
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn btn-outline-secondary mb-1 me-1 btn-sm";
+        button.setAttribute("aria-pressed", "false");
+        button.setAttribute("data-chart", target_plot);
+        button.setAttribute("data-key", key);
+        button.textContent = key;
+        btn_container.appendChild(button);
+
+        // Add Event-Listener
+        button.addEventListener("click", () => openFilter(button));
+      }
+    });
+  }
+
+  /**
+   * This function retrieves the names of the series that are currently visible in a Plotly plot.
+   * It checks the `visible` property of each trace in the plot's data to determine if it is visible.
+   * The function returns an array containing the names of the visible series.
+   *
+   * @param {Object} plotElement - The Plotly plot element (e.g., a div containing the plot).
+   * @returns {Array} visibleSeries - An array of names of the visible series.
+   */
+  function getSelectedSeries(plotElement) {
+    return plotElement._fullData
+        .filter(trace => trace.visible === true || trace.visible === "visible")
+        .map(trace => parseInt(trace.name, 10))
+        .filter(Number.isInteger);
+  }
+
+  /**
+   * Monitors the visibility changes of traces and logs the names of the hidden series.
+   * This function is triggered on the `plotly_restyle` event, which occurs when the visibility
+   * of traces is altered (e.g., via the legend click).
+   *
+   * @param {Object} plotElement - The Plotly plot element (div containing the plot).
+   */
+  function monitorVisibilityChanges(plotElement) {
+    plotElement.on("plotly_restyle", function (eventData) {
+      const label_id = plotElement.layout.meta["label_id"];
+      hiddenSeries[label_id] = [];
+      let visibleSeries = plotElement.data.length;
+
+      // Loop through the traces to check the visibility status
+      plotElement._fullData.forEach((trace, index) => {
+        // If the trace is not visible, add its name to the hiddenSeries array
+        if (trace.visible === false || trace.visible === "legendonly") {
+          hiddenSeries[label_id].push(trace.name);
+        }
+      });
+
+      if (label_id == 0) {
+        summary_cycles["bad"] = visibleSeries - hiddenSeries[label_id].length;
+      } else if (label_id == 1) {
+        summary_cycles["good"] = visibleSeries - hiddenSeries[label_id].length;
+      } else if (label_id == -1) {
+        summary_cycles["unknown"] = visibleSeries - hiddenSeries[label_id].length;
+      }
+      updateSummary();
+    });
+  }
+
+  function isInRange(t, start, end) {    
+    return t >= start && t <= end;
+  }
+
+  function toggle_series(label_index) {
+    const plot = document.getElementById('plot_cycles_'+label_index);
+    if (plot) {
+      const active_filters = Array.from(global_filters.get(-1)?.entries() || []).filter(([key, f]) => f.active).map(([key, f]) => ({ ...f, key }));
+      const update = { visible: [] };
+
+      plot.data.forEach((trace, index) => {
+            const pass_dyn_filters = active_filters.map(filter => { 
+              const val = trace.customdata?.[0]?.[filter.key]; //get trace value
+
+              // numeric values
+              if ('min' in filter.user && 'max' in filter.user) {
+                return val >= filter.user.min && val <= filter.user.max;
+              }
+              // string values
+              if (filter.user instanceof Set) {
+                return filter.user.has(val);
+              }
+              // boolean
+              if ('values' in filter && filter?.values instanceof Set && typeof([...filter?.values][0]) === 'boolean')
+              {
+                return !val; // invert the boolean value, false = filtered out
+              }
+              return true;            
+          }).every(Boolean);
+
+          update.visible[index] = !pass_dyn_filters ? 'legendonly' : true;
+      });
+
+      Plotly.restyle(plot, update);
+    }
+  }
+
+
+  updateSummary();
+  {% for id, plot in data.plots.scatter.items() %}
+  updateTimeSeries("{{id}}");
+  {% endfor %}
+</script>

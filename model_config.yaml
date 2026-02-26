@@ -1,0 +1,88 @@
+# config.yaml
+config_version: 0.10                 # Unique identifier for the collection of settings: values in this file
+
+#split_by_id
+validation_size: 0.2                # Proportion of data to be used for the validation set
+split_random_state: 42              # Random state for reproducibility of the output
+
+# Input data quality evaluation
+data_quality:
+  enabled: true
+  filter_outliers: false         # Enable or disable outlier filtering
+  method: fisher_score              # Only fisher score at the moment
+  threshold: 100                    # Value to compare to
+  fisher_score_cancel: false        # Cancel or not if quality under threshold
+  min_length_ratio: 0.8             # Minimum length ratio wrt the median length to consider the signal valid. 
+  min_length_cancel: false          # Cancel or not if length under threshold
+  min_length_remove: false           # Remove or not if length under threshold
+  max_lag_mad_z: 3.5                # Maximum lag ratio wrt the modified z score. 
+  max_lag_remove: false              # Remove or not if length under threshold
+  use_section: Null                 # Section to use for the data quality evaluation. Can be 's0','s1', 's2', 'ns0', 'ns1','ns2', ... If Null, will use all sections.
+
+# Feature debugging
+debug_features:                      
+  enabled: true                         # Enable or disable global feature debugging (must also be enabled on each feature)
+  first_cycle_only: false               # If true, will only log features for the first cycle of the signal
+  one_cycle_per_label: true             # log 1 cycle per label. Ignores 1st label only
+  fisher_score: false
+  similarity_matrix: true
+  absolute_sum_of_changes: false
+  agg_autocorrelation: false
+  agg_linear_trend: false
+  autocorrelation: false
+  binned_entropy: false
+  c3: false
+  change_quantiles: false
+  cid_ce: false
+  cwt_coefficients: false
+  energy_ratio_by_chunks: false      
+  fft_aggregated: false                 # Plot aggregated FFT of the signals. WARNING: Creates 1 plot per signal.
+  fft_coefficient: false
+  mean_second_derivative_central: false
+  
+
+# Plots
+plots:
+  enabled: true
+  plot_ts_simple_pre_lags: false       # time series plot before time lags
+  plot_ts_simple_post_lags: false      # time series plot after time lags
+  plot_model_2D_train: true           # model plot with training and validation data
+  plot_model_2D_train_quality: 2      # controls the DENSITY of points in the plot. 1 lowest - 10 highest. Affects performance. 
+  plot_model_2D_predict: true         # model plot with training and validation data
+  plot_model_2D_predict_quality: 2    # controls the DENSITY of points in the plot. 1 lowest - 10 highest. Affects performance. 
+  plot_model_3D_train: true           # model plot with training and validation data. 3D version, pre-PCA.
+  plot_model_3D_train_quality: 50     # controls the NUMBER of points in the plot. Affects performance. 
+  plot_model_3D_predict: true           # model plot with training and validation data. 3D version, pre-PCA.
+  plot_model_3D_predict_quality: 20   # controls the NUMBER of points in the plot. Affects performance.
+  plot_model_3D_with_vectors: false    # model plot with training and validation data. 3D version, pre-PCA.
+  plot_stacked_ts_pre_lags: true     # Stacked version of the ts plot to verify alignment
+  plot_stacked_ts_post_lags: true    # Stacked version of the ts plot to verify alignment
+  plot_ts_and_xcorr: false            # !!!!! Plot cross correlation of the signals. WARNING: Creates 1 plot per signal.
+
+# Tests
+experimental:
+  enabled: false
+  CWT: true
+  
+#Misc
+add_tag_to_df: false
+scaling_type: Standard              # 'Standard' will trigger StandardScaler, anything else will trigger MinMax 
+
+# DR modes
+dr_modes:
+  M7:
+    run_fisher_score:
+      top_n: 3
+      similarity_threshold: .7
+    column_mask: ''
+
+
+# Model list and options
+models:
+  Model 13:
+    HDBSCAN_Clustering:
+      alpha: 0.5
+      std_dev_coeff: 1
+
+#top models
+n_models: 1 #number of top models to choose

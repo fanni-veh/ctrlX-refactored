@@ -1,0 +1,212 @@
+<form id="loginForm">
+  <h3>{{ create_new_account if type == 'register' else login_title }}</h3>
+
+  <label for="username">{{ login_email }}</label>
+  <input type="email" placeholder="{{ login_email }}" id="username" name="username" autocomplete="email" required aria-label="Email address" />
+  <span class="error-message" id="usernameError"></span>
+
+  <label for="password">{{ login_password }}</label>
+  <input type="password" placeholder="{{ login_password }}" id="password" name="password" autocomplete="{{ 'new-password' if type == 'register' else 'current-password' }}" required aria-label="Password" />
+  <span class="error-message" id="passwordError"></span>
+  {% if type == 'register' %}
+  <small class="password-requirements">{{ complex_password_required }}</small>
+  {% endif %}
+
+  <button type="button" onclick="loginUser()" id="loginButton" disabled>{{ register if type == 'register' else login_submit }}</button>
+
+  {% if type != "register" %}
+  <small class="note"> <a href="/reset">{{ forgotten_password }}</a><br /> </small><br />
+  <small class="note">
+    <span>{{ no_account_yet }}</span>
+    <a href="{{ url_for('register') }}">{{ createUser }}</a>
+  </small>
+  {% endif %}
+</form>
+
+<script>
+    {% if type == "register" %}
+    var endpoint = "register";
+    var failed = "{{ register_failed }}";
+    var success = "{{ register_success }}";
+    {% else %}
+    var endpoint = "login";
+    var failed = "{{ login_failed }}";
+    var success = "{{ login_success }}";
+    {% endif %}
+
+    const form = document.getElementById("loginForm");
+    const loginButton = document.getElementById("loginButton");
+    const emailInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const emailError = document.getElementById('usernameError');
+    const passwordError = document.getElementById('passwordError');
+
+    let attemptCount = 0;
+    let lastAttemptTime = 0;
+    const MAX_ATTEMPTS = 5;
+    const LOCKOUT_TIME = 300000; // 5 minutes in milliseconds
+
+    // Email validation
+    function validateEmail(email) {
+      email = email.trim();
+      if (email.length < 5 || email.length > 254) {
+          return false;
+      }
+      const re = /^[a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      return re.test(email);
+    }
+
+    // password validation
+    function validatePassword(password) {
+      if ("{{ type }}" !== "register") return true;
+
+      const minLength = password.length >= 8;
+      const hasUpper = /[A-Z]/.test(password);
+      const hasLower = /[a-z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+      return minLength && hasUpper && hasLower && hasNumber && hasSpecial;
+    }
+
+    // Check rate limiting
+    function checkRateLimit() {
+      const now = Date.now();
+
+      if (attemptCount >= MAX_ATTEMPTS) {
+        const timeSinceLastAttempt = now - lastAttemptTime;
+        if (timeSinceLastAttempt < LOCKOUT_TIME) {
+          const remainingTime = Math.ceil((LOCKOUT_TIME - timeSinceLastAttempt) / 1000);
+          return { allowed: false, remainingTime };
+        } else {
+          // Reset after lockout period
+          attemptCount = 0;
+        }
+      }
+
+      return { allowed: true };
+    }
+
+    async function loginUser() {
+      // Clear previous errors
+      emailError.textContent = '';
+      passwordError.textContent = '';
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      // Client-side validation
+      if (!validateEmail(email)) {
+        emailError.textContent = 'Please enter a valid email address';
+        return;
+      }
+
+      // Check rate limiting
+      const rateLimitCheck = checkRateLimit();
+      if (!rateLimitCheck.allowed) {
+        showToast('error', `Too many attempts. Please wait ${rateLimitCheck.remainingTime} seconds.`);
+        return;
+      }
+
+      // Disable button to prevent double submission
+      loginButton.disabled = true;
+
+      try {
+        const baseUrl = window.location.origin;
+        const response = await fetch(`${baseUrl}/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password
+          }),
+          credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Reset attempt count on success
+          attemptCount = 0;
+          showToast('success', success);
+
+          // Redirect to intended destination or root
+          const redirectUrl = data.redirect || '{{ url_for("root") }}';
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 1000);
+        } else {
+          // Increment attempt count on failure
+          attemptCount++;
+          lastAttemptTime = Date.now();          
+          showToast('error', failed);          
+          loginButton.disabled = false;
+        }
+      } catch (error) {
+        showToast('error', 'An error occurred. Please try again.');
+        loginButton.disabled = false;
+      }
+    }
+
+  function showToast(type, message) {
+      const x = document.getElementById("snackbar");
+      if (!x) return;
+
+      x.textContent = message;
+      x.classList.add('show', type);
+
+      setTimeout(() => {
+          x.classList.remove('show', type);
+      }, 3000);
+  }
+
+    emailInput.addEventListener('blur', function() {
+      if (this.value && !validateEmail(this.value.trim())) {
+        emailError.textContent = 'Please enter a valid email address';
+        emailError.classList.add('d-block');
+      } else {
+        emailError.textContent = '';
+        emailError.classList.remove('d-block');
+      }
+    });
+
+    passwordInput.addEventListener('input', function() {
+      if ("{{ type }}" === "register" && this.value) {
+        if (!validatePassword(this.value)) {
+          passwordError.textContent = 'Password does not meet requirements';
+          passwordError.classList.add('d-block');
+        } else {
+          passwordError.textContent = '';
+          passwordError.classList.remove('d-block');
+        }
+      }
+    });
+
+    // Enable/disable submit button based on form validity
+    form.addEventListener("input", function () {
+      const emailValid = validateEmail(emailInput.value.trim());
+      const passwordValid = "{{ type }}" === "register" ?
+        validatePassword(passwordInput.value) :
+        passwordInput.value.length > 0;
+
+      loginButton.disabled = !(emailValid && passwordValid);
+    });
+
+    // Handle Enter key
+    form.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' && !loginButton.disabled) {
+        event.preventDefault();
+        loginUser();
+      }
+    });
+
+    // Global Enter key listener
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+          if (loginButton && !loginButton.disabled) {
+              loginButton.click();
+          }
+      }
+    });
+</script>

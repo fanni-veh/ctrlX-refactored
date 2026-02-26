@@ -1,0 +1,73 @@
+<!-- Numeric Modal to define min/max -->
+<div class="modal fade" id="textFilterModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="text_filter_title"></h5>
+            </div>
+            <div class="modal-body text-start">
+                <div class="text-input-container">
+                    <select id="filter_text_select" class="form-select form-select-lg" multiple>
+                        
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="filter_reset" onclick="resetTextFilter()">{{reset}}</button>
+                <button class="btn btn-primary" id="filter_apply" onclick="applyTextFilter()">{{apply}}</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function openTextFilter(button, filter_data) {
+    document.getElementById("text_filter_title").textContent = button.dataset.key;
+    const select = document.getElementById("filter_text_select");
+    select.innerHTML = ''; //Remove all existings options
+
+    filter_data.values.forEach(e => {
+        const option = document.createElement("option");
+        option.textContent = e;
+        option.value=e;
+        if(filter_data.user.has(e)){
+            option.selected=true;
+        }
+        select.appendChild(option);
+    });            
+
+    const modal = new bootstrap.Modal(document.getElementById('textFilterModal'));
+    modal.show();
+}
+
+
+function applyTextFilter() {
+    const plot = current_filter.plot_idx;
+    const key = current_filter.key;
+
+    const select = document.getElementById("filter_text_select");
+    const btn = document.querySelector(`[data-chart="${plot}"][data-key="${key}"]`);
+    btn.setAttribute('aria-pressed', 'true');
+    btn.classList.add('active');
+
+    current_filter.data.active = true;    
+    current_filter.data.user.clear();
+    Array.from(select.selectedOptions).forEach(option => current_filter.data.user.add(option.value));
+    bootstrap.Modal.getInstance(document.getElementById('textFilterModal')).hide();
+    toggle_series(parseInt(plot));
+}
+
+function resetTextFilter() {
+    const plot = current_filter.plot_idx;
+    const key = current_filter.key;
+
+    current_filter.data.active = false;
+
+    const btn = document.querySelector(`[data-chart="${plot}"][data-key="${key}"]`);
+    btn.setAttribute('aria-pressed', 'false');
+    btn.classList.remove('active');
+
+    bootstrap.Modal.getInstance(document.getElementById('textFilterModal')).hide();
+    toggle_series(parseInt(plot));
+}
+    
+</script>

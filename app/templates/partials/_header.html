@@ -1,0 +1,55 @@
+<link href="{{ url_for('static', path='/css/header.css') }}" rel="stylesheet">
+
+<nav class="navbar navbar-expand-lg  navbar-dark bg-black py-2 border-bottom border-1 border-dark sticky-top">
+    <div class="container-fluid">
+      <a href="/" class="navbar-brand ms-4 d-flex flex-column align-items-end">
+        <div class="d-flex align-items-baseline">
+            <img src="{{ url_for('static', path='/logo.svg') }}" alt="Logo" class="logo me-2" height="27px">      
+            <span class="display-5 text-white" style="font-weight: unset;">{{mind}}</span>  
+        </div>
+        <small class="text-white fs-5">{{motion_insights_and_diagnostics}}</small>
+      </a>
+      {% if user is defined and user_role != 'exhibition' %}
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <div class="navbar-nav justify-content-center flex-grow-1">
+            <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/', '#'] %}active{% endif %}" aria-current="page" href="/">{{menu_home | upper}}</a>
+            <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/train'] %}active{% endif %}" href="{{ url_for('train_ui') }}">{{menu_train | upper}}</a>
+            <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/predict'] %}active{% endif %}" href="{{ url_for('predict_ui') }}">{{menu_predict | upper}}</a>
+            <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/analytics'] %}active{% endif %}" href="{{ url_for('analytics') }}">{{menu_data_explorer | upper}}</a>
+            <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/import'] %}active{% endif %}" href="{{ url_for('import_zip') }}">{{menu_import | upper}}</a>
+        </div>
+        {% endif %}
+        <div class="d-flex justify-content-center align-items-center ms-auto me-lg-4 py-2">
+            <a href="#" class="nav-link text-white me-3" hx-on:click="htmx.toggleClass('#language-overlay','d-none')" hx-toggle="class:d-none" hx-trigger="click" hx-target="#language-overlay">
+                <i class="bi bi-globe fs-3"></i>
+            </a>
+            {% if user is defined %}
+            <a href="#" class="nav-link text-white" hx-on:click="htmx.toggleClass('#user-overlay','d-none')">
+                <i class="bi bi-person-circle fs-3"></i>
+            </a>
+            {% endif %}
+        </div>
+        
+    </div>
+</nav>
+
+<div id="snackbar" class="toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+<div id="language-overlay" class="d-none" hx-on:click="this.classList.add('d-none')">
+    <div class="p-5 bg-white rounded" hx-on:click="event.stopPropagation()">
+        <p class="text-black fs-4 fw-bold">{{select_language}}</p>
+        {% for language in languages %}
+            <button type="button" class="btn btn-primary btn-lg mb-2 d-block px-5 py-3 w-100" hx-get="/htmx/set-language/{{ language }}" hx-target="body" hx-vals='js:{"current_url": window.location.pathname}'>{{ language }}</button>
+        {% endfor %}
+    </div>
+</div>
+<div id="user-overlay" class="d-none" hx-on:click="this.classList.add('d-none')">
+    <div class="p-5 bg-white rounded">     
+        <a href="{{ url_for('info') }}" class="btn btn-primary btn-lg mb-2 d-block px-5 py-3 w-100">{{main_info}}</a>        
+        <a href="/reset" class="btn btn-primary btn-lg mb-2 d-block px-5 py-3 w-100">{{change_password}}</a>        
+        <a href="{{ url_for('logout') }}" class="btn btn-primary btn-lg mb-2 d-block px-5 py-3 w-100">{{ logout }}</a>        
+    </div>
+</div>

@@ -1,0 +1,154 @@
+@import "colors";
+
+/* The snackbar */
+/* Show the snackbar */
+/* Animations to fade the snackbar in and out */
+@-webkit-keyframes fadein {
+  from {
+    top: 0;
+    opacity: 0;
+  }
+  to {
+    top: 30px;
+    opacity: 1;
+  }
+}
+@keyframes fadein {
+  from {
+    top: 0;
+    opacity: 0;
+  }
+  to {
+    top: 30px;
+    opacity: 1;
+  }
+}
+@-webkit-keyframes fadeout {
+  from {
+    top: 30px;
+    opacity: 1;
+  }
+  to {
+    top: 0;
+    opacity: 0;
+  }
+}
+@keyframes fadeout {
+  from {
+    top: 30px;
+    opacity: 1;
+  }
+  to {
+    top: 0;
+    opacity: 0;
+  }
+}
+
+nav {
+  background-color: black !important;
+  color: $white;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  margin-bottom: 2em;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+
+    span {
+      font-weight: bold;
+      color: red;
+    }
+
+    small {
+      color: white;
+      margin-left: 10px;
+      font-size: 0.8rem;
+    }
+  }
+
+  .nav-link {
+    color: white;
+    font-size: 1.3rem;
+
+    &.active {
+      color: white;
+      font-weight: bold;
+      position: relative;
+
+      &::after {
+        content: "";
+        position: absolute;
+        top: 5px;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background-color: white;
+      }
+    }
+
+    &:hover {
+      color: white;
+    }
+
+    @media (max-width: 991px) {
+      &.active {
+        color: rgba(var(--bs-link-color-rgb), var(--bs-link-opacity, 1)) !important;
+
+        &::after {
+          height: 0;
+        }
+      }
+    }
+  }
+
+  .bi {
+    font-size: 1.2rem;
+  }
+}
+
+#language-overlay,
+#user-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+#snackbar {
+  visibility: hidden;
+  min-width: 250px;
+  background-color: $header_background;
+  color: $white;
+  text-align: center;
+  border-radius: 2px;
+  padding: 16px;
+  position: fixed;
+  z-index: 9999;
+  left: 50%;
+  top: 30px;
+  transform: translateX(-50%);
+
+  &.show {
+    visibility: visible;
+    -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+  }
+  &.error {
+    background-color: $snackbar_error_background;
+  }
+  &.success {
+    background-color: $snackbar_success_background;
+  }
+}

@@ -1,0 +1,17 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{{ title }}</title>
+<link href="{{ url_for('static', path='/css/styles.css') }}" rel="stylesheet" />
+<link href="{{ url_for('static', path='/favicon-100x100.png') }}" rel="icon" type="image/png" sizes="100x100" />
+<link href="{{ url_for('static', path='/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet" />
+<link href="{{ url_for('static', path='/bootstrap-icons/font/bootstrap-icons.min.css') }}" rel="stylesheet" />
+<script src="{{ url_for('static', path='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', path='htmx.min.js') }}"></script>
+<script>
+  // Override HTMX config to enable swap on 204 responses
+  htmx.config.responseHandling = [
+    {code:"204", swap:true},
+    {code:"[23]..", swap:true},
+    {code:"[45]..", swap:false, error:true}
+  ];
+</script>

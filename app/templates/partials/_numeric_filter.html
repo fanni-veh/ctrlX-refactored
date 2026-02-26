@@ -1,0 +1,339 @@
+<!-- Numeric Modal to define min/max -->
+<div class="modal fade" id="numericFilterModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filter_title"></h5>
+            </div>
+            <div class="modal-body text-start">
+                <div class="number-input-container">
+                    <div class="number-input">
+                        <div class="number-field">
+                            <span>{{min_value}}:</span>
+                            <input type="number" class="min-input" value="0" id="min_value">
+                        </div>
+                        <div class="number-field">
+                            <span>{{max_value}}:</span>
+                            <input type="number" class="max-input" value="0" id="max_value">
+                        </div>
+                    </div>
+                    <span>{{data_distribution}}:</span>
+                    <div class="histogram-bar-container" id="histogram">
+                        <!-- Bars generated dynamicly -->
+                    </div>
+
+                    <div class="slider">
+                        <div class="numeric-slider"></div>
+                    </div>
+                </div>
+                
+                <!-- Slider -->
+                <div class="range-input">
+                    <input type="range" class="min-range" min="0" max="0" value="0" step="1" id="slider_min_value">
+                    <input type="range" class="max-range" min="0" max="0" value="0" step="1" id="slider_max_value">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="filter_reset" onclick="resetFilter()">{{reset}}</button>
+                <button class="btn btn-primary" id="filter_apply" onclick="applyFilter()">{{apply}}</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var rangeValue = document.querySelector(".slider .numeric-slider");
+    var sliders = document.querySelectorAll(".range-input input");
+    var inputs = document.querySelectorAll(".number-input input");
+    var histogram = document.getElementById("histogram");
+    // Set the minimal gap/space between min and max
+    var valueGap = 0;
+
+    /**
+    * Clamps a value between a minimum and maximum bound.
+    *
+    * @param {number} val - The value to clamp.
+    * @param {number} minVal - The lower bound.
+    * @param {number} maxVal - The upper bound.
+    * @returns {number} - The clamped value.
+    */
+    function clamp(val, minVal, maxVal) {
+        return Math.max(minVal, Math.min(val, maxVal));
+    }
+
+    /**
+    * Updates the UI for the range inputs and displays based on the provided range values.
+    *
+    * @param {string} key - The key to determine if date formatting is needed.
+    * @param {number} minVal - The minimum value of the range.
+    * @param {number} maxVal - The maximum value of the range.
+    * @param {number} minLimit - The lower bound of the full range.
+    * @param {number} maxLimit - The upper bound of the full range.
+    */
+    function updateRangeUI(key, minVal, maxVal, minLimit, maxLimit) {
+        const total = maxLimit - minLimit;
+        
+        // Update slider values
+        sliders[0].value = minVal;
+        sliders[1].value = maxVal;
+        
+        // Handle special formatting for 'cycle_start_timestamp'
+        if (key === 'cycle_start_timestamp') {
+            inputs[0].value = new Date(minVal).toLocaleString();
+            inputs[1].value = new Date(maxVal).toLocaleString();  
+            inputs[0].dataset.value = minVal;
+            inputs[1].dataset.value = maxVal;       
+        } else {
+            inputs[0].value = minVal;
+            inputs[1].value = maxVal;
+        }
+
+        // Update the visual representation of the range
+        rangeValue.style.left = `${((minVal - minLimit) / total) * 100}%`;
+        rangeValue.style.right = `${100 - ((maxVal - minLimit) / total) * 100}%`;
+
+        // Highlight out-of-range bins in the histogram
+        histogram.querySelectorAll('div').forEach(bin => {
+            const start = parseFloat(bin.dataset.start);
+            const end = parseFloat(bin.dataset.end);
+
+            if (end < minVal || start > maxVal) {
+                bin.classList.add('out-of-range');
+            } else {
+                bin.classList.remove('out-of-range');
+            }
+        });
+    }
+
+    /**
+    * Handles input changes from sliders or input fields and updates the range values.
+    *
+    * @param {Event} e - The input event triggered by user interaction with a slider or input field.
+    */
+    function handleInput(e) {
+        // Ensure there is valid data in the current filter
+        if (!current_filter?.data) return;
+
+        // Extract min and max values from the filter's data
+        const { min, max } = current_filter.data;
+        const source = e.target;
+        let minVal, maxVal;
+
+        // Handle input based on whether it's from a slider or an input field
+        if (source === sliders[0] || source === sliders[1]) {
+            // slider
+            minVal = parseFloat(sliders[0].value);
+            maxVal = parseFloat(sliders[1].value);
+        } else {
+            // Input-Feld
+            if (current_filter.key === 'cycle_start_timestamp') {
+                minVal = inputs[0].dataset.value;
+                maxVal = inputs[1].dataset.value;
+            } else {
+                minVal = parseFloat(inputs[0].value);
+                maxVal = parseFloat(inputs[1].value);
+            }
+        }
+
+        // Clamp values to ensure they stay within the allowed range
+        minVal = clamp(minVal, min, max);
+        maxVal = clamp(maxVal, min, max);
+
+        if (maxVal - minVal < valueGap) {
+            // Adjust values based on which input is being adjusted
+            if (source === inputs[0] || source === sliders[0]) {
+                minVal = maxVal - valueGap;
+            } else {
+                maxVal = minVal + valueGap;
+            }
+        }
+
+        // Update the UI with the new range values
+        updateRangeUI(current_filter.key, minVal, maxVal, min, max);
+    }
+
+    /**
+    * Opens the numeric filter modal, initializes the filter's UI elements, 
+    * and renders a histogram based on the filter data.
+    *
+    * @param {HTMLElement} button - The button that triggered the modal.
+    * @param {Object} filter_data - The data for the filter (min, max, values).
+    */
+    function openNumericFilter(button, filter_data) {
+        // Extract min and max values from filter data
+        let minValue = filter_data.min;
+        let maxValue = filter_data.max;
+
+        // Retrieve user-specific min/max values or fallback to filter data
+        let userMinValue = current_filter.data?.user?.min ?? minValue;
+        let userMaxValue = current_filter.data?.user?.max ?? maxValue;
+
+        let minBtn = document.getElementById("min_value");
+        let maxBtn = document.getElementById("max_value");
+        
+        // Handle cycle_start_timestamp case with date formatting
+        if (button.dataset.key === 'cycle_start_timestamp') {
+            minBtn.type="text";
+            maxBtn.type="text";
+            minBtn.dataset.value = userMinValue;
+            maxBtn.dataset.value = userMaxValue;
+            minBtn.value = new Date(userMinValue).toLocaleString();
+            maxBtn.value = new Date(userMaxValue).toLocaleString();
+        } else {
+            minBtn.type="number";
+            maxBtn.type="number";
+            minBtn.value = userMinValue;
+            maxBtn.value = userMaxValue;
+        }
+
+        // Update sliders with min/max values and user-selected values
+        let slider = document.getElementById('slider_min_value');
+        slider.setAttribute('min', minValue);
+        slider.setAttribute('max', maxValue);
+        slider.value = userMinValue;
+
+        slider = document.getElementById('slider_max_value');
+        slider.setAttribute('min', minValue);
+        slider.setAttribute('max', maxValue);
+        slider.value = userMaxValue;
+
+        // trigger event to update ui
+        minBtn.dispatchEvent(new Event('input'));
+        maxBtn.dispatchEvent(new Event('input'));
+
+        // Set the filter modal title based on the button's key
+        if (button.dataset.key === 'cycle_start_timestamp') {
+            document.getElementById("filter_title").textContent = "{{select_time_range}}";            
+        } else {
+            document.getElementById("filter_title").textContent = button.dataset.key;
+        }
+
+        // Define histogram bin count: between 5 and 50
+        const binCount = Math.min(50, Math.max(5, Math.ceil(Math.sqrt(filter_data.values.length))));
+        // Create histogram bins based on filter values
+        const bins = createHistogramBins(filter_data.values, filter_data.min, filter_data.max, binCount);
+        const maxBin = Math.max(...bins.map(b => b.count));
+        renderHistogram("histogram", bins, maxBin);
+        
+        const filterModal = bootstrap.Modal.getOrCreateInstance('#numericFilterModal');
+        filterModal.show();
+    }
+
+    /**
+    * Applies the filter by setting the selected range and updating the plot.
+    * Also updates the UI to reflect the active state of the filter.
+    */
+    function applyFilter() {
+        const plot = current_filter.plot_idx;
+        const key = current_filter.key;
+
+        let min, max;
+
+        if (key === 'cycle_start_timestamp') {
+            min = document.getElementById("min_value").dataset.value;
+            max = document.getElementById("max_value").dataset.value;
+        } else {
+            min = document.getElementById("min_value").value;
+            max = document.getElementById("max_value").value;
+        }
+
+        // Find the button that corresponds to the filter and update its state
+        const btn = document.querySelector(`[data-chart="${plot}"][data-key="${key}"]`);
+        btn.setAttribute('aria-pressed', 'true');
+        btn.classList.add('active');
+
+        // Mark the filter as active and update its user-defined min/max values
+        current_filter.data.active = true;
+        if ('min' in current_filter.data) {
+            current_filter.data.user.min = min;
+            current_filter.data.user.max = max;
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('numericFilterModal')).hide();
+        toggle_series(parseInt(plot));
+    }
+
+    /**
+    * Resets the current filter, deactivating it and updating the UI.
+    * Also hides the filter modal and updates the series plot.
+    */
+    function resetFilter() {
+        const plot = current_filter.plot_idx;
+        const key = current_filter.key;
+
+        // Deactivate the current filter
+        current_filter.data.active = false;
+        const btn = document.querySelector(`[data-chart="${plot}"][data-key="${key}"]`);
+        btn.setAttribute('aria-pressed', 'false');
+        btn.classList.remove('active');
+
+        bootstrap.Modal.getInstance(document.getElementById('numericFilterModal')).hide();
+        toggle_series(parseInt(plot));
+    }
+
+    /**
+    * Creates histogram bins based on the given values, range, and bin count.
+    * It distributes the values into the appropriate bins based on their value.
+    *
+    * @param {Array<number>} values - The data values to be binned.
+    * @param {number} min - The minimum value of the data range.
+    * @param {number} max - The maximum value of the data range.
+    * @param {number} binCount - The number of bins to divide the data into.
+    * @returns {Array<Object>} The histogram bins with the count of values in each bin.
+    */
+    function createHistogramBins(values, min, max, binCount) {
+        // Calculate the size of each bin
+        const binSize = (max - min) / binCount;        
+        
+        // Initialize the bins array, each with a count of 0 and start/end range
+        const bins = Array.from({ length: binCount }, (_, i) => ({
+            count: 0,
+            start: min + i * binSize,
+            end: min + (i + 1) * binSize,
+        }));
+
+        // Iterate over all values and increment the count for the corresponding bin
+        values.forEach(val => {
+            const index = Math.min(
+                binCount - 1,
+                Math.floor((val - min) / binSize)
+            );
+            bins[index].count++;
+        });
+        return bins;
+    }
+
+
+    /**
+    * Renders a histogram inside the specified container based on the given data bins.
+    * Each bin is represented by a bar whose height corresponds to its count.
+    *
+    * @param {string} containerId - The ID of the container element to render the histogram in.
+    * @param {Array<Object>} dataBins - The histogram bins containing start, end, and count properties.
+    * @param {number} maxCount - The maximum count to normalize the bar heights.
+    */
+    function renderHistogram(containerId, dataBins, maxCount) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = ""; // Clear any existing content
+
+        // Iterate through the data bins and create a bar for each one
+        dataBins.forEach(bin => {
+            const bar = document.createElement("div");
+            bar.className = "histogram-bar";
+            bar.dataset.start = bin.start;
+            bar.dataset.end = bin.end;                     
+            container.appendChild(bar);
+            
+            const heightPercent = (bin.count / maxCount) * 100;                        
+            // Set the bar height with a delay for animation effect
+            setTimeout(() => {    
+                bar.style.height = `${heightPercent}%`;
+            }, 400);
+        });
+    }
+
+    // Register event-listeners
+    [...inputs, ...sliders].forEach(el =>
+        el.addEventListener("input", handleInput)
+    ); 
+</script>

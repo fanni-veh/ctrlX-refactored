@@ -1,0 +1,79 @@
+{% if motors.keys() | length > 0 %}
+<div class="accordion text-start" id="accordion">
+  {% for id, motor in motors.items() %}
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="heading{{ id }}">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ id }}" aria-expanded="true" aria-controls="collapse{{ id }}">Motor: {{ motor.machine }} ({{ motor.part }} | {{ motor.serial }})</button>
+    </h2>
+    <div id="collapse{{ id }}" class="accordion-collapse show" aria-labelledby="heading{{ id }}">
+      <div class="accordion-body">
+        <h5 class="card-title mb-4">{{motor_information}}</h5>
+        <dl class="row">
+          <dt class="col-sm-3"><strong>{{id}}:</strong></dt>
+          <dd class="col-sm-9">{{ id }}</dd>
+
+          <dt class="col-sm-3"><strong>{{serial_number}}:</strong></dt>
+          <dd class="col-sm-9">{{ motor.serial }}</dd>
+
+          <dt class="col-sm-3"><strong>{{part}}:</strong></dt>
+          <dd class="col-sm-9">{{ motor.part }}</dd>
+
+          <dt class="col-sm-3"><strong>{{machine}}:</strong></dt>
+          <dd class="col-sm-9">{{ motor.machine }}</dd>
+
+          <dt class="col-sm-3"><strong>{{client}}:</strong></dt>
+          <dd class="col-sm-9">{{ motor.client }}</dd>
+
+          <dt class="col-sm-3"><strong>{{time_created}}:</strong></dt>
+          <dd class="col-sm-9">{{ motor.time_created }}</dd>
+        </dl>
+
+        {% for app_id, app in motor.applications.items() %}
+        <div class="accordion" id="accordion_app_{{ app_id }}">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="app_heading{{ app_id }}">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#app_collapse{{ app_id }}" aria-expanded="true" aria-controls="app_collapse{{ app_id }}">Application: {{ app.context_code }}</button>
+            </h2>
+            <div id="app_collapse{{ app_id }}" class="accordion-collapse show" aria-labelledby="app_heading{{ app_id }}">
+              <div class="accordion-body">
+                <h5 class="card-title mb-4">{{application_information}}</h5>
+
+                <dl class="row">
+                  <dt class="col-sm-3"><strong>{{id}}:</strong></dt>
+                  <dd class="col-sm-9">{{ app_id }}</dd>
+
+                  <dt class="col-sm-3"><strong>{{application}}:</strong></dt>
+                  <dd class="col-sm-9">{{ app.context_code }}</dd>
+
+                  <dt class="col-sm-3"><strong>{{recipe}}:</strong></dt>
+                  <dd class="col-sm-9 text-break">{{ app.recipe }}</dd>
+
+                  <dt class="col-sm-3"><strong>{{count_good_cycles}}:</strong></dt>
+                  <dd class="col-sm-9">{{ app.cycles.good }}</dd>
+
+                  <dt class="col-sm-3"><strong>{{count_bad_cycles}}:</strong></dt>
+                  <dd class="col-sm-9">{{ app.cycles.bad }}</dd>
+
+                  <dt class="col-sm-3"><strong>{{amount_unknown_cycles}}:</strong></dt>
+                  <dd class="col-sm-9">{{ app.cycles.unknown }}</dd>
+
+                  <dt class="col-sm-3"><strong>{{count_measuring_points}}:</strong></dt>
+                  <dd class="col-sm-9">{{ app.cycles.points }}</dd>
+                </dl>
+                <a href="train/{{ app_id }}" class="btn btn-success m-0 w-100">{{start_training}}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<h3>{{imported_no_data}}</h3>
+<div id="button-container" class="justify-content-between mt-4">
+  <a href="/import" class="btn btn-primary" type="button">{{import_restart}}..</a>
+</div>
+{% endif %}

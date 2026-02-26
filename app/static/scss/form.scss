@@ -1,0 +1,80 @@
+@import "colors";
+
+body {
+  font-family: $font_family;
+  background-color: $body_background;
+  color: $white;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+section {
+  //max-width: 90%;
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: $section_background;
+  text-align: center;
+}
+h1 {
+  font-size: 36px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+p {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+a {
+  color: $link_color;
+  text-decoration: none;
+  //font-weight: bold;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  border: 1px solid black;
+  padding: 8px;
+}
+td {
+  border: 1px solid black;
+  padding: 8px;
+}
+.button {
+  color: $white;
+  padding: 5px 10px;
+  border: none;
+  cursor: pointer;
+  &:disabled {
+    background-color: $button_disabled_background !important;
+    cursor: not-allowed;
+  }
+  &.download {
+    font-size: large;
+  }
+}
+
+.background_red {
+  background-color: $button_red !important;
+}
+.background_green {
+  background-color: $button_green !important;
+}
+footer {
+  //padding: 20px 0 0 0;
+}
+
+.spinner {
+  display: none;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #3498db;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+  vertical-align: middle;
+}

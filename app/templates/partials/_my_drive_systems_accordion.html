@@ -1,0 +1,75 @@
+<div class="container-fluid fw-bold py-2 d-none d-md-block text-start" style="padding-right: 55px; padding-left: 33px">
+  <div class="row">
+    <div class="col-md-3 fs-5">{{ machine }}</div>
+    <div class="col-md-3 fs-5 d-none d-md-block">{{article_number}}</div>
+    <div class="col-md-3 fs-5">{{health_state}}</div>
+    <div class="col-md-3 fs-5 d-none d-md-block">{{last_predict}}</div>
+  </div>
+</div>
+{% for motor in data %}
+<div class="accordion-item border-top">
+  <h2 class="accordion-header" id="heading{{ loop.index }}">
+    <button class="accordion-button {% if user_role != 'exhibition' %}collapsed{%endif%}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="{% if user_role == 'exhibition' %}true{%else%}false{% endif %}" aria-controls="collapse{{ loop.index }}">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-6 col-md-3 fw-bold">{{ motor.machine }}</div>
+          <div class="col-3 fw-bold d-none d-md-block">{{ motor.part }} / {{ motor.serial_number }}</div>
+          <div class="col-6 col-md-3 d-flex align-items-center flex-nowrap">
+            <span class="status-circle" style="background-color: {{ motor.motor_health_color }};"></span>
+            <span class="ms-2 fw-bold" data-value="{{motor.motor_health_score}}">{{ motor.motor_health_text }}</span>
+          </div>
+          <div class="col-3 d-none d-md-block">{{ motor.last_prediction_time }}</div>
+        </div>
+      </div>
+    </button>
+  </h2>
+  <div id="collapse{{ loop.index }}" class="accordion-collapse {%if user_role == 'exhibition' %}show{%else%}collapse{% endif %}" aria-labelledby="heading{{ loop.index }}">
+    <div class="accordion-body p-3 p-sm-2 p-md-3 p-lg-4">
+      <div class="table-responsive">
+        <table class="table table-hover table-borderless align-middle">
+          <thead class="border-bottom border-white">
+            <tr>
+              <th class="fw-bold fs-6" style="width: 20%">{{application}}</th>
+              {% if user_role != "exhibition" %}
+                <th class="fw-bold fs-6 d-none d-md-table-cell" style="width: 15%">{{cycle_amount}}</th>
+              {% endif %}
+              <th class="fw-bold fs-6">{{health_state}}</th>
+              <th class="fw-bold fs-6" style="width: 25%">{{last_predict}}</th>
+              <th class="fw-bold fs-6" style="width: 10%">{{actions}}</th>
+            </tr>
+          </thead>
+          <tbody id="motor_predictions-{{ motor.id }}" 
+                hx-get="/htmx/prediction_runs?mot_id={{ motor.id }}" 
+                hx-trigger="load, every 5s" 
+                hx-swap="innerHTML"
+                hx-target="#motor_predictions-{{ motor.id }}">
+                <tr>
+                  <td colspan="5">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">{{loading}}...</span>
+                    </div>
+                  </td>
+                </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+<script>
+  document.body.addEventListener('htmx:afterRequest', (evt) => {
+    if (evt.detail.target.id.startsWith("predict-btn-") && evt.detail.xhr.status === 200) {
+      const app_id = evt.detail.target.id;
+      const runId = JSON.parse(evt.detail.xhr.responseText);
+      const btn = document.getElementById(app_id);
+      if (!btn) return;
+
+      // Set icon to waiting state
+      btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+      btn.classList.add('disabled', 'btn-outline-secondary');      
+
+      // Polling not needed, cause htmx will update the button on next request
+    }
+  });
+</script>

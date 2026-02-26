@@ -1,0 +1,16 @@
+<div class="container-box text-center rounded p-4 m-2 bg-dark h-100">
+  <h4>{{training_in_progress}}</h4>
+  <p>{{overview_in_progress_sub}}</p>
+  <table id="data-table" class="table text-white">
+    <thead>
+      <tr>
+        <th>{{machine}}</th>
+        <th>{{part}} / {{serial_number}}</th>       
+        <th>{{application}}</th>
+        <th>{{duration}}</th>
+        <th>{{progress}}</th>        
+      </tr>
+    </thead>
+    <tbody hx-get="/htmx/training_progress" hx-trigger="load, every 5s" hx-target="#data-table tbody"></tbody>
+  </table>
+</div>
