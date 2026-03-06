@@ -1,0 +1,58 @@
+name: mind
+base: core22
+version: '1.1.0'
+summary: Motion Insights and Diagnostics
+description: |
+  MIND is a FastAPI web application for motor motion insights and
+  diagnostics, providing predictive maintenance capabilities via
+  machine-learning pipelines, MQTT ingestion, and an analytics dashboard.
+
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: [arm64]
+    build-for: [arm64]
+
+environment:
+  SNAP: $SNAP
+  SNAP_COMMON: $SNAP_COMMON
+  PATH: $SNAP/bin:$PATH
+  PYTHONPATH: $SNAP/lib/python3.11/site-packages
+
+apps:
+  mind:
+    command: bin/start.sh
+    daemon: simple
+    restart-condition: on-failure
+    plugs:
+      - network
+      - network-bind
+
+parts:
+  python-env:
+    plugin: python
+    source: .
+    python-requirements:
+      - requirements.txt
+    build-packages:
+      - python3.11-dev
+      - python3.11-venv
+      - libffi-dev
+      - libssl-dev
+      - gcc
+      - g++
+      - libsass-dev
+    stage-packages:
+      - python3.11
+      - libgomp1
+      - libgfortran5
+    override-build: |
+      snapcraftctl build
+      cp -r app alembic alembic.ini model_config.yaml pyproject.toml "$SNAPCRAFT_PART_INSTALL/"
+      install -D -m 755 snap/local/start.sh "$SNAPCRAFT_PART_INSTALL/bin/start.sh"
+      install -D snap/local/package-manifest.json "$SNAPCRAFT_PART_INSTALL/package-manifest.json"
+    override-prime: |
+      snapcraftctl prime
+      cd "$SNAPCRAFT_PRIME"
+      bin/python3 -c "import sass, os; os.makedirs('app/static/css', exist_ok=True); sass.compile(dirname=('app/static/scss', 'app/static/css'), output_style='compressed'); print('SCSS compiled.')"
