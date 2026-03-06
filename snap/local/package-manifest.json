@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.boschdevcloud.com/ctrlx-automation/v1.4.0/package-manifest.schema.json",
+  "version": "1.4.0",
+  "id": "mind",
+  "vendor": {
+    "name": "maxon motor ag"
+  },
+  "title": "MIND",
+  "description": "Motion Insights and Diagnostics — predictive maintenance for drive systems.",
+  "categories": [
+    "analysis"
+  ],
+  "links": {
+    "router": [
+      {
+        "title": "MIND",
+        "description": "Open MIND web interface",
+        "target": "mind-service",
+        "url": "/mind/",
+        "icon": "mind-icon.svg"
+      }
+    ]
+  },
+  "services": {
+    "mind-service": {
+      "type": "proxy",
+      "address": "http://localhost:8000"
+    }
+  }
+}

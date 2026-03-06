@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 import io
 from logging.handlers import RotatingFileHandler
-
+import os
 from pathlib import Path
 import time
 from typing import Optional
@@ -46,11 +46,12 @@ logging.getLogger("uvicorn.access").addHandler(uvicorn_file_handler)
 logging.getLogger("uvicorn.error").addHandler(uvicorn_file_handler)
 
 
-# compile scss to css
-start = time.perf_counter()
-sass.compile(dirname=('app/static/scss', 'app/static/css'), output_style='compressed')
-end = time.perf_counter()
-print(f"SASS Compiler runs in: {end-start}")
+# compile scss to css (skipped in snap — pre-compiled at build time)
+if not os.environ.get('SNAP'):
+    start = time.perf_counter()
+    sass.compile(dirname=('app/static/scss', 'app/static/css'), output_style='compressed')
+    end = time.perf_counter()
+    print(f"SASS Compiler runs in: {end-start}")
 
 
 @asynccontextmanager
@@ -157,7 +158,7 @@ async def admin(context: dict = Depends(Utils.prepareBaseContext),
     context['users'] = dto_users
 
     # load pipeline.yml keep comments
-    file = Path("model_config.yaml")
+    file = Path(os.environ.get('SNAP_COMMON', '.')) / 'model_config.yaml'
     config = file.read_text(encoding='utf-8') if file.exists() else ""
     context['model_config'] = config
     return templates.TemplateResponse("admin.html", context)
@@ -172,7 +173,8 @@ async def update_config(pipelineYml: str = Form(...),
     # write input to model_config.yaml
     try:
         config = yaml.load(pipelineYml)
-        with open('model_config.yaml', 'w') as file:
+        model_config_path = Path(os.environ.get('SNAP_COMMON', '.')) / 'model_config.yaml'
+        with open(model_config_path, 'w') as file:
             yaml.dump(config, file)
             tsa_logger.info("Configuration updated by user: %s", user.email)
             return '<div class="alert alert-success">Configuration saved successfully!</div>'

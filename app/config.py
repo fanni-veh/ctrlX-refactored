@@ -101,7 +101,8 @@ class Setting(BaseSettings):
     tsa_hostname: Optional[str] = None
 
     prometheus_multiproc_dir: str = os.path.join(tempfile.gettempdir(), "prometheus_metrics")
-    os.environ["PROMETHEUS_MULTIPROC_DIR"] = prometheus_multiproc_dir
+    if "PROMETHEUS_MULTIPROC_DIR" not in os.environ:
+        os.environ["PROMETHEUS_MULTIPROC_DIR"] = prometheus_multiproc_dir
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
