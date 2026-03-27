@@ -1,3 +1,16 @@
+"""
+SQLAlchemy ORM models for MIND.
+
+Hierarchy:
+    User  ←many-to-many→  Motor  →  Application  →  CycleData  →  MeasuringPoint
+                                                   ↓
+                                                  Run  →  Model  →  Prediction
+
+Association tables:
+    motor_user  : links Users to the Motors they are allowed to access
+    cycle_run   : links CycleData records to the Run they were used in
+"""
+
 import datetime
 import json
 import uuid
@@ -30,6 +43,11 @@ cycle_run = Table(
 
 
 class TSABaseModel(Base):
+    """
+    Abstract base for all ORM models.
+    Provides `db_model_to_json()` for serialising a row to a plain dict,
+    automatically skipping columns marked with `info={'json_exclude': True}`.
+    """
     __abstract__ = True
 
     def db_model_to_json(self, select=None):
@@ -45,6 +63,17 @@ class TSABaseModel(Base):
 
 
 class User(TSABaseModel):
+    """
+    Application user. Roles control what a user can see and do:
+      - ADMIN      : full access to all motors, applications, and the admin panel
+      - SERVICE    : read/write access, used for automated service accounts
+      - GUEST      : read-only access, limited to assigned motors
+      - EXHIBITION : view-only demo mode
+
+    A user is linked to one or more Motors via the motor_user association table.
+    ctrlX CORE handles OS-level auth; every inbound request is mapped to the
+    built-in admin user (see app/scripts/auth.py).
+    """
     __tablename__ = "user"
 
     class Role(Enum):
@@ -71,6 +100,10 @@ class User(TSABaseModel):
 
 
 class ApiKey(TSABaseModel):
+    """
+    API key for programmatic access (e.g. external services or scripts).
+    Each key is owned by a User and can be independently disabled or expired.
+    """
     __tablename__ = "api_key"
 
     id = Column(Integer, primary_key=True, nullable=False)
@@ -89,7 +122,7 @@ class Model(TSABaseModel):
     __tablename__ = "model"
 
     id = Column(Integer, primary_key=True, nullable=False)
-    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("run.id", ondelete="CASCADE"), nullable=False, index=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("run.id", ondelete="CASCADE"), nullable=False, index=True)
     model_name = Column(String, nullable=False)
     model_onnx = Column(LargeBinary, nullable=False, info={'json_exclude': True})
     model_metadata = Column(JSON, nullable=False)
@@ -131,6 +164,13 @@ class Model(TSABaseModel):
 
 
 class Motor(TSABaseModel):
+    """
+    A physical drive/motor unit being monitored.
+
+    Identified by a (serial, part) pair which must be unique — two motors of
+    the same part number but different serial numbers are distinct records.
+    A Motor can have multiple Applications (different use-cases / recipes).
+    """
     __tablename__ = "motor"
 
     id = Column(Integer, autoincrement=True, primary_key=True, nullable=False)
@@ -179,6 +219,15 @@ class Motor(TSABaseModel):
 
 
 class Application(TSABaseModel):
+    """
+    A specific use-case for a Motor, defined by a context_code and recipe.
+
+    - context_code : identifies the operational context (e.g. machine station)
+    - recipe       : hash of the motion profile / parameter set used
+
+    One Motor can have many Applications (different motion recipes).
+    Each Application owns its own CycleData, Runs, and MeasuringPoints.
+    """
     __tablename__ = "application"
 
     id = Column(Integer, autoincrement=True, primary_key=True, nullable=False)
@@ -225,6 +274,21 @@ class Application(TSABaseModel):
 
 
 class CycleData(TSABaseModel):
+    """
+    One execution cycle of a motor application.
+
+    A cycle captures the drive and motion configuration at the time of recording
+    and carries a Classification label (GOOD / BAD / UNKNOWN).
+    The raw time-series measurements for a cycle live in MeasuringPoint rows.
+
+    classification:
+      - GOOD    : labelled as a healthy/reference cycle
+      - BAD     : labelled as a faulty/degraded cycle
+      - UNKNOWN : not yet labelled (typical for live MQTT data)
+
+    Cycles labelled GOOD or BAD can be used for training (isTrainCycle = True).
+    UNKNOWN cycles are used only for prediction.
+    """
     __tablename__ = "cycledata"
 
     class Classification(Enum):
@@ -319,6 +383,17 @@ class CycleData(TSABaseModel):
 
 
 class MeasuringPoint(TSABaseModel):
+    """
+    One timestamped sensor row for a CycleData record.
+
+    Each row stores up to 9 metric values sampled at the same timestamp.
+    Columns marked with `info={"metric": True}` are the actual sensor signals;
+    everything else is metadata (ids, timestamps, flags).
+
+    Metrics available:
+      act_current, act_following_error, act_position, act_torque,
+      act_velocity, cmd_position, cmd_velocity, temp_motor, temp_power_stage
+    """
     __tablename__ = "measuringpoint"
 
     class Metric(Enum):
@@ -377,6 +452,16 @@ class MeasuringPoint(TSABaseModel):
 
 
 class Run(TSABaseModel):
+    """
+    A single training or prediction execution triggered by a user.
+
+    task  : TRAIN (build a new model) or PREDICTION (score cycles with an existing model)
+    state : IDLE → RUNNING → SUCCESS | ERROR
+
+    A Run links to the CycleData it processed (cycle_run table) and stores
+    progress/result metadata in `state_metadata` as JSON. On success a TRAIN run
+    owns one or more Model records; a PREDICTION run owns Prediction records.
+    """
     __tablename__ = "run"
 
     class State(Enum):
@@ -389,7 +474,7 @@ class Run(TSABaseModel):
         PREDICTION = "prediction"
         TRAIN = "train"
 
-    id = Column(Uuid(as_uuid=True), primary_key=True)
+    id = Column(Uuid(as_uuid=False), primary_key=True)
     application_id: Mapped[int] = mapped_column(ForeignKey("application.id", ondelete="CASCADE"), nullable=True, index=True)  # Possible None-value at the beginning of train
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, index=True)
     task: Mapped[Task] = mapped_column(SQLEnum(Task, name="run_task", values_callable=lambda x: [e.value for e in x]), nullable=False, index=True)
@@ -418,6 +503,16 @@ class Run(TSABaseModel):
 
 
 class Prediction(TSABaseModel):
+    """
+    One predicted label/confidence value for a single cycle within a prediction Run.
+
+    Two rows are written per cycle (one per Metric):
+      - LABEL         : 1.0 = GOOD, 0.0 = BAD
+      - CONFIDENCE_1  : model confidence that the cycle is class 1 (GOOD), range [0, 1]
+
+    cycle_id is stored without a FK constraint because ZIP-based predictions
+    create temporary CycleData objects that are never persisted to the DB.
+    """
     __tablename__ = "prediction"
 
     class Metric(Enum):
@@ -425,7 +520,7 @@ class Prediction(TSABaseModel):
         CONFIDENCE_1 = "confidence_1"
 
     id = Column(Integer, primary_key=True, nullable=False)
-    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("run.id", ondelete="CASCADE"), nullable=False, index=True)  # One-to-one relationship with Predict-Run
+    run_id: Mapped[str] = mapped_column(ForeignKey("run.id", ondelete="CASCADE"), nullable=False, index=True)  # One-to-one relationship with Predict-Run
     model_id: Mapped[int] = mapped_column(ForeignKey("model.id", ondelete="CASCADE"), nullable=False, index=True)
     cycle_id = Column(Integer, nullable=False)  # Not a foreign key cause ZIP-Predictions have no CycleData
     metrics = Column(String, nullable=False)  # Not binded to enum, to allow future extensions easily - but should be converted to enum later.

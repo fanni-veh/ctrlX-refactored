@@ -1,24 +1,23 @@
 name: mind
+title: MIND
 base: core22
 version: '1.1.0'
 summary: Motion Insights and Diagnostics
 description: |
-  MIND is a FastAPI web application for motor motion insights and
-  diagnostics, providing predictive maintenance capabilities via
-  machine-learning pipelines, MQTT ingestion, and an analytics dashboard.
+  MIND — Motion Insights and Diagnostics.
+  AI-driven predictive maintenance for industrial drive systems.
 
 grade: stable
 confinement: strict
 
 architectures:
-  - build-on: [arm64]
+  - build-on: [amd64]
     build-for: [arm64]
 
 environment:
-  SNAP: $SNAP
-  SNAP_COMMON: $SNAP_COMMON
-  PATH: $SNAP/bin:$PATH
-  PYTHONPATH: $SNAP/lib/python3.11/site-packages
+  PATH: $SNAP/bin:$SNAP/usr/bin:$PATH
+  # app/ and all pip packages are importable from these locations
+  PYTHONPATH: $SNAP:$SNAP/lib/python3/site-packages
 
 apps:
   mind:
@@ -28,31 +27,71 @@ apps:
     plugs:
       - network
       - network-bind
+    slots:
+      - package-assets
+      - package-run
+
+slots:
+  package-assets:
+    interface: content
+    content: package-assets
+    source:
+      read:
+        - $SNAP/package-assets/mind
+  package-run:
+    interface: content
+    content: package-run
+    source:
+      write:
+        - $SNAP_DATA/package-run/mind
 
 parts:
-  python-env:
-    plugin: python
+  mind-app:
+    plugin: nil
     source: .
-    python-requirements:
-      - requirements.txt
+    # core22 base already provides python3.10 at runtime — no need to stage it.
+    # We only need python3-pip at build time for the override-build step.
     build-packages:
-      - python3.11-dev
-      - python3.11-venv
-      - libffi-dev
-      - libssl-dev
-      - gcc
-      - g++
-      - libsass-dev
-    stage-packages:
-      - python3.11
-      - libgomp1
-      - libgfortran5
+      - python3-pip
     override-build: |
-      snapcraftctl build
-      cp -r app alembic alembic.ini model_config.yaml pyproject.toml "$SNAPCRAFT_PART_INSTALL/"
-      install -D -m 755 snap/local/start.sh "$SNAPCRAFT_PART_INSTALL/bin/start.sh"
-      install -D snap/local/package-manifest.json "$SNAPCRAFT_PART_INSTALL/package-manifest.json"
-    override-prime: |
-      snapcraftctl prime
-      cd "$SNAPCRAFT_PRIME"
-      bin/python3 -c "import sass, os; os.makedirs('app/static/css', exist_ok=True); sass.compile(dirname=('app/static/scss', 'app/static/css'), output_style='compressed'); print('SCSS compiled.')"
+      SITE="${CRAFT_PART_INSTALL}/lib/python3/site-packages"
+      WHEELS="${CRAFT_PART_SRC}/wheels"
+
+      # Step 1: Install all packages except onnxruntime (manylinux_2_17 wheels)
+      grep -v '^onnxruntime' "${CRAFT_PART_SRC}/requirements-snap.txt" > /tmp/reqs-no-onnx.txt
+      pip3 install \
+        --no-index \
+        --find-links "${WHEELS}" \
+        --no-compile \
+        --target "${SITE}" \
+        --platform manylinux_2_17_aarch64 \
+        --python-version 3.10 \
+        --implementation cp \
+        --abi cp310 \
+        --only-binary=:all: \
+        -r /tmp/reqs-no-onnx.txt
+
+      # Step 2: Install onnxruntime 1.20.1 (manylinux_2_28 wheel, numpy-2.x compatible)
+      # --no-deps because numpy and other deps are already installed above
+      pip3 install \
+        --no-index \
+        --find-links "${WHEELS}" \
+        --no-compile \
+        --target "${SITE}" \
+        --platform manylinux_2_28_aarch64 \
+        --python-version 3.10 \
+        --implementation cp \
+        --abi cp310 \
+        --only-binary=:all: \
+        --no-deps \
+        onnxruntime==1.20.1
+
+      # Copy application code and startup script
+      cp -r "${CRAFT_PART_SRC}/app" "${CRAFT_PART_INSTALL}/"
+      install -D -m 755 "${CRAFT_PART_SRC}/snap/local/start.sh" "${CRAFT_PART_INSTALL}/bin/start.sh"
+
+  configs:
+    plugin: dump
+    source: ./configs
+    organize:
+      'package-assets/*': package-assets/mind/

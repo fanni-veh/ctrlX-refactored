@@ -64,7 +64,7 @@ class Setting(BaseSettings):
                     "or set DATABASE_HOSTNAME, DATABASE_USERNAME, DATABASE_PASSWORD, and DATABASE_NAME."
                 )
         return self
-    jwt_secret: str
+    jwt_secret: str = "change-me-in-production"
     algorithm: str = 'HS256'
     predict_all_cycles: bool = False
     smtp_server: str = "smtp.maxonmotor.com"

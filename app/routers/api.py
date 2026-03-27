@@ -1,3 +1,24 @@
+"""
+REST API router — prefix: /api
+
+All endpoints require a valid user (injected via get_effective_user).
+Non-admin users are restricted to motors explicitly assigned to them.
+
+Endpoints grouped by resource:
+    Model       GET/DELETE  /api/model
+    Motor       GET/DELETE  /api/motor, /api/motor/{id}
+    Application GET/DELETE  /api/application, /api/application/{id}
+    Cycle       GET/DELETE/PUT  /api/cycle, /api/cycle/{id}/{disabled}
+    Run         GET/DELETE/PUT  /api/run/{id}, /api/run/{id}/{disabled}
+    Rules       GET/PUT  /api/rules/{application_id}
+    Train       POST  /api/train
+    Predict     POST  /api/predict
+    Preview     POST  /api/preview
+    Import      POST  /api/import
+    Report      GET   /api/report/{run_id}
+    MQTT        PUT   /api/validate_mqtt
+"""
+
 from datetime import datetime
 import logging
 import math
@@ -46,6 +67,7 @@ async def get_model(db: AsyncSession = Depends(database.get_db),
                     application_id: Optional[int] = None,
                     model_name: Optional[str] = None,
                     selection: Optional[str] = Query(None, description="Select specific attributes like: model_name,model_metadata")):
+    """Return a list of trained models. Filterable by model_id, application_id, or model_name."""
     try:
         stmt = (
             select(models.Model)
@@ -76,6 +98,7 @@ async def delete_model(db: AsyncSession = Depends(database.get_db),
                        user: models.User = Depends(get_effective_user),
                        model_id: Optional[int] = Query(None, description="The id of one model to delete"),
                        run_id: Optional[str] = Query(None, description="The run_id to delete each associated model")):
+    """Delete one model by model_id, or all models belonging to a run by run_id. Exactly one must be provided."""
     try:
         if bool(model_id) == bool(run_id):
             raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="Exactly one of 'model_id' or 'run_id' is required.")
@@ -116,6 +139,7 @@ async def get_motor(db: AsyncSession = Depends(database.get_db),
                     machine: Optional[str] = None,
                     client: Optional[str] = None,
                     selection: Optional[str] = Query(None, description="Select specific attributes like: serial, part")):
+    """Return motors the current user has access to. All filter params are optional and use case-insensitive matching."""
     try:
         stmt = select(models.Motor)
         if not user.isAdmin():
@@ -145,6 +169,7 @@ async def get_motor(db: AsyncSession = Depends(database.get_db),
 async def delete_motor(motor_id: int,
                        db: AsyncSession = Depends(database.get_db),
                        user: models.User = Depends(get_effective_user)):
+    """Delete a motor and cascade-delete all its Applications, CycleData, and Rules."""
     try:
         stmt = (
             select(models.Motor)
@@ -176,6 +201,7 @@ async def get_application(db: AsyncSession = Depends(database.get_db),
                           context_code: Optional[str] = None,
                           recipe: Optional[str] = None,
                           selection: Optional[str] = Query(None, description="Select specific attributes like: id, motor_id")):
+    """Return applications the current user has access to. All filter params are optional."""
     try:
         stmt = select(models.Application).join(models.Motor)
         if not user.isAdmin():
@@ -203,6 +229,7 @@ async def get_application(db: AsyncSession = Depends(database.get_db),
 async def delete_application(application_id: int,
                              db: AsyncSession = Depends(database.get_db),
                              user: models.User = Depends(get_effective_user)):
+    """Delete an application and cascade-delete its CycleData, Runs, Models, and Rules."""
     try:
         stmt = (
             select(models.Application)
@@ -235,6 +262,7 @@ async def get_cycle(db: AsyncSession = Depends(database.get_db),
                     application_id: Optional[int] = None,
                     classification: Optional[Classification] = None,
                     selection: Optional[str] = Query(None, description="Select specific attributes like: model_name,model_metadata")):
+    """Return cycle records. Filter by cycle_id, application_id, or classification (good/bad/unknown)."""
     try:
         stmt = (
             select(models.CycleData)
@@ -265,6 +293,7 @@ async def get_cycle(db: AsyncSession = Depends(database.get_db),
 async def delete_cycle(cycle_id: int,
                        db: AsyncSession = Depends(database.get_db),
                        user: models.User = Depends(get_effective_user)):
+    """Delete a single cycle and all its MeasuringPoint rows."""
     try:
         stmt = (
             select(models.CycleData)
@@ -291,6 +320,10 @@ async def delete_cycle(cycle_id: int,
 async def delete_run(run_id: str,
                      db: AsyncSession = Depends(database.get_db),
                      user: models.User = Depends(get_effective_user)):
+    """
+    Delete a run. If it is a training run, all prediction runs that used its
+    model are also deleted (they would become invalid without the model).
+    """
     try:
         try:
             UUID(run_id)
@@ -327,6 +360,7 @@ async def delete_run(run_id: str,
 async def get_run(run_id: str,
                   user: models.User = Depends(get_effective_user),
                   db: AsyncSession = Depends(database.get_db)):
+    """Return a single run record by UUID, including its linked application and motor."""
     stmt = (
         select(models.Run)
         .where(models.Run.id == run_id)
@@ -354,7 +388,10 @@ async def preview(
         db: AsyncSession = Depends(database.get_db),
         user: models.User = Depends(get_effective_user),
         context: dict = Depends(Utils.prepareBaseContext)):
-
+    """
+    Return a JSON preview of the signal data without running the full pipeline.
+    Accepts either a ZIP/CSV file upload or an application_id (not both).
+    """
     tskParam = await validate_and_prepare_task(db, user.id, TskParam.TaskName.PREVIEW, file, application_id)
     if file:
         tskParam.write_file(file)
@@ -372,6 +409,11 @@ async def train(background_tasks: BackgroundTasks,
                 filter_used: bool = Query(False, description="Filter used cycles"),
                 user: models.User = Depends(get_effective_user),
                 db: AsyncSession = Depends(database.get_db)):
+    """
+    Start a training run in the background. Returns a run_id immediately.
+    Provide either a ZIP/CSV file upload or an application_id (not both).
+    Poll GET /api/run/{run_id} to track progress.
+    """
     tskParam = await validate_and_prepare_task(db, user.id, TskParam.TaskName.TRAIN, file, application_id)
     if filter_used:
         tskParam.filters.append("used")
@@ -395,6 +437,12 @@ async def predict(background_tasks: BackgroundTasks,
                   train_run_id: str = Query(None, description="Selection of a specific train-run (see model ➔ run_id)"),
                   user: models.User = Depends(get_effective_user),
                   db: AsyncSession = Depends(database.get_db)):
+    """
+    Start a prediction run in the background. Returns a run_id immediately.
+    Optionally pin a specific training run via train_run_id; otherwise the
+    latest successful training run for the application is used.
+    Poll GET /api/run/{run_id} to track progress.
+    """
     tskParam = await validate_and_prepare_task(db, user.id, TskParam.TaskName.PREDICT, file, application_id)
     if filter_used:
         tskParam.filters.append("used")
@@ -424,6 +472,11 @@ async def importer(
         add_seen_cycles: bool = Query(False),
         db: AsyncSession = Depends(database.get_db),
         user: Optional[models.User] = Depends(get_effective_user)):
+    """
+    Import a ZIP archive containing CSV cycle files.
+    Creates or updates Motor, Application, and CycleData records.
+    Set add_seen_cycles=true to also import cycles that already exist in the DB.
+    """
     try:
         content = await file.read()
         result = await Utils.import_file_zip(user, content, db, add_seen_cycles)
@@ -449,6 +502,7 @@ async def set_run_state(run_id: str,
                         context: dict = Depends(Utils.prepareBaseContext),
                         db: AsyncSession = Depends(database.get_db),
                         user: models.User = Depends(get_effective_user)):
+    """Toggle a run's disabled flag. Returns an updated HTMX button fragment."""
     try:
         try:
             UUID(run_id)
@@ -510,6 +564,11 @@ async def validate_and_prepare_task(db: AsyncSession,
                                     task: TskParam.TaskName,
                                     file: Optional[UploadFile] = None,
                                     application_id: Optional[int] = None) -> TskParam:
+    """
+    Validate inputs and build a TskParam for a train/predict/preview task.
+    Exactly one of file or application_id must be supplied.
+    Raises HTTP 400/404 if validation fails.
+    """
     if bool(file) == bool(application_id):
         raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="Exactly one of 'file' or 'application_id' is required.")
 

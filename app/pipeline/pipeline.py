@@ -1,19 +1,33 @@
-''' 
-Data reduction pipeline
+"""
+Data reduction and classification pipeline for MIND.
 
-v0.1.1 - Initial version
-v0.1.2 - Callbacks, HDBScan
-v0.1.3 - Model plotting to log
-v0.1.4 - __private to _protected. PCA params to metadata.
-v0.1.5 - MinMax scaling option
-v0.1.6 - Fisher score for input data quality
-v0.1.7 - HDBScan input parameters
-v0.1.8 - time_lags changed to preprocessing
-v0.1.9 - Improved lag calculation and signal alignment. 
-       - Added reduction_summary. 
-       - Flexible this_model_cycle_ids_and_conf1_df wwith extra metrics. 
-v0.1.10 - adjusted model geometry for axial and perpendicular spread factors.        
-'''
+This module contains the core ML pipeline used for both training and prediction.
+It takes raw motor time-series data (CycleData + MeasuringPoints) and:
+  1. Extracts statistical/signal features from each cycle
+  2. Reduces dimensionality (PCA, SVD, or correlation-based selection)
+  3. Trains an HDBSCAN clustering model (training only)
+  4. Converts the model to ONNX for fast, portable inference
+  5. Runs ONNX inference and produces per-cycle GOOD/BAD predictions
+
+Main classes:
+    BaseClass  — shared config loading, logging, and callback/observer support
+    Trainer    — extends BaseClass to train and persist a new model
+    Predictor  — extends BaseClass to load an ONNX model and score new cycles
+
+Configuration is loaded from model_config.yaml (see root of the project).
+
+Changelog:
+    v0.1.1  Initial version
+    v0.1.2  Callbacks, HDBScan
+    v0.1.3  Model plotting to log
+    v0.1.4  __private → _protected; PCA params to metadata
+    v0.1.5  MinMax scaling option
+    v0.1.6  Fisher score for input data quality
+    v0.1.7  HDBScan input parameters
+    v0.1.8  time_lags moved to preprocessing
+    v0.1.9  Improved lag calculation and signal alignment; added reduction_summary
+    v0.1.10 Adjusted model geometry for axial and perpendicular spread factors
+"""
 
 # General
 import logging
@@ -62,12 +76,24 @@ ver_major = 0
 ver_minor = 1
 ver_patch = 10
 
+# Registry of available classifier classes, keyed by class name.
+# Currently only HDBSCAN_Clustering is active. Additional classifiers
+# (CatBoost, RandomForest, etc.) can be added here and selected via model_config.yaml.
 CLASSIFIERS = {cls.__name__: cls for cls in [
     HDBSCAN_Clustering
 ]}
 
 
 class BaseClass:
+    """
+    Shared base for Trainer and Predictor.
+
+    Responsibilities:
+      - Load and validate pipeline_config (from model_config.yaml)
+      - Set up the logger and per-run log directory
+      - Provide a callback/observer mechanism so callers can receive
+        progress updates without polling (used by the FastAPI background task)
+    """
 
     def __init__(self, data, pipeline_config: dict, logger: logging.Logger, callback: callable = None):
 
@@ -1154,6 +1180,19 @@ class BaseClass:
 
 
 class Predictor(BaseClass):
+    """
+    Runs inference on new cycle data using a previously trained ONNX model.
+
+    Workflow:
+      1. Apply the same feature extraction used during training
+      2. Apply the same dimensionality reduction (loaded from model metadata)
+      3. Load the ONNX model binary from the DB
+      4. Run onnxruntime inference → per-cycle label + confidence
+      5. Return results to the caller via callback and return value
+
+    Instantiate with a list of Model DB records; the best/latest model is
+    selected automatically if multiple are provided.
+    """
 
     def __init__(self, data, logger: logging.Logger, models: list[models.Model], pipeline_config: dict = None, callback: callable = None):
 
@@ -1383,6 +1422,22 @@ class Predictor(BaseClass):
 
 
 class Trainer(BaseClass):
+    """
+    Trains a new classification model from labelled cycle data.
+
+    Workflow:
+      1. Load input time-series DataFrame (one row per timestamp per cycle)
+      2. Extract statistical/signal features for each cycle
+      3. Compute feature similarity matrix; apply quality checks (Fisher score)
+      4. Reduce dimensionality (PCA / SVD / correlation-based selection)
+      5. Split into train/validation sets
+      6. Train HDBSCAN_Clustering (or any CLASSIFIERS entry)
+      7. Evaluate: accuracy, F1, ROC-AUC, Matthews correlation, etc.
+      8. Convert to ONNX via onnx_converter; store binary + metadata in DB
+
+    The trained model is returned via callback and saved to the database by
+    Utils.tsk_train (app/utils.py), not by this class directly.
+    """
 
     def __init__(self, data: pd.DataFrame, logger: logging.Logger, pipeline_config: dict = None, callback: callable = None):
 
