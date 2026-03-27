@@ -43,7 +43,7 @@ class ReportService:
     async def _fetch_run_with_permissions(run_id: str, user: models.User, db: AsyncSession) -> RunData:
         """Fetch run data with user permission checks"""
         stmt = (
-            select(models.Run, func.array_agg(models.cycle_run.c.cycle_id).label("cycle_ids"))
+            select(models.Run, func.group_concat(models.cycle_run.c.cycle_id).label("cycle_ids"))
             .outerjoin(models.cycle_run)
             .where(models.Run.id == run_id)
             .group_by(models.Run.id)
@@ -74,7 +74,8 @@ class ReportService:
         else:
             await db.refresh(result.Run, ['models'])
 
-        cycle_ids = result.cycle_ids if result.cycle_ids and any(result.cycle_ids) else []
+        raw = result.cycle_ids
+        cycle_ids = [int(x) for x in raw.split(",") if x] if raw else []
         return RunData(run=result.Run, cycle_ids=cycle_ids)
 
     @staticmethod

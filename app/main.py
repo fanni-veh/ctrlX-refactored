@@ -15,7 +15,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 import pandas as pd
 from app import database, models
-from app.middleware.auth_middleware import AuthMiddleware
 from app.scripts.auth import get_effective_user
 from app.scripts.database_helper import load_measurements_by_app
 from app.scripts.report_service import ReportService
@@ -29,7 +28,6 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import set_committed_value
 from app.config import setting
-import sass
 from app.scripts.tsa_logging import create_logger
 from ruamel.yaml import YAML
 from uuid import UUID
@@ -48,6 +46,7 @@ logging.getLogger("uvicorn.error").addHandler(uvicorn_file_handler)
 
 # compile scss to css (skipped in snap — pre-compiled at build time)
 if not os.environ.get('SNAP'):
+    import sass
     start = time.perf_counter()
     sass.compile(dirname=('app/static/scss', 'app/static/css'), output_style='compressed')
     end = time.perf_counter()
@@ -61,6 +60,9 @@ async def lifespan(app: FastAPI):
     """
     # Initialize the database session manager when the app starts
     session_manager.init_db()
+    # Create tables if they don't exist (first run on a new device)
+    async with session_manager.engine.begin() as conn:
+        await conn.run_sync(models.Base.metadata.create_all)
     tsa_logger.info("Application startup complete. version: %s", app_version)
     yield  # Yield control back to the application
     tsa_logger.info("Waiting for application shutdown.")
@@ -68,7 +70,7 @@ async def lifespan(app: FastAPI):
     await session_manager.close()
     tsa_logger.info("Application shutdown complete.")
 
-app_version = Utils.get_value_from_pyproject('version')
+app_version = Utils.get_value_from_pyproject('version') or os.environ.get('SNAP_VERSION', '1.1.0')
 app = FastAPI(title="MAXON MIND", version=app_version, lifespan=lifespan)
 # mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -81,7 +83,6 @@ app.add_middleware(CORSMiddleware,
                    allow_methods=["*"],
                    allow_headers=["*"]
                    )
-app.add_middleware(AuthMiddleware)
 app.add_middleware(PrometheusMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)  # Compress responses larger than 1000 bytes
 
@@ -106,11 +107,6 @@ async def root(context: dict = Depends(Utils.prepareBaseContext)):
     response = templates.TemplateResponse("index.html", context)
     response.set_cookie(key="lang", value=context['lang'])
     return response
-
-
-@app.get('/create_user')
-def register(context: dict = Depends(Utils.prepareBaseContext)):
-    return templates.TemplateResponse("register.html", context)
 
 
 @app.get('/info')
@@ -381,3 +377,18 @@ def _create_zip(application: models.Application, data: pd.DataFrame) -> io.Bytes
     end = time.perf_counter()
     tsa_logger.info("Time taken generate the zip-file compression=zipfile.ZIP_DEFLATED, compresslevel=1: %.2f s", end-start)
     return zip_data
+
+
+# When running as a ctrlX snap, the nginx reverse proxy forwards requests with
+# the /mind prefix intact (e.g. GET /mind/). Strip it so FastAPI routes match.
+if os.environ.get("SNAP"):
+    _PREFIX = "/mind"
+    _inner_app = app
+
+    async def app(scope, receive, send):  # noqa: F811
+        if scope["type"] in ("http", "websocket"):
+            path = scope.get("path", "")
+            if path.startswith(_PREFIX):
+                scope = dict(scope)
+                scope["path"] = path[len(_PREFIX):] or "/"
+        await _inner_app(scope, receive, send)

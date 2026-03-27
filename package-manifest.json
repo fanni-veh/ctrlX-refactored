@@ -1,30 +1,57 @@
 {
   "version": "1.0.0",
   "id": "mind",
-  "title": "MIND",
-  "description": "Motion Insights and Diagnostics — AI-driven predictive maintenance for industrial drives",
-  "categories": [
-    "diagnostics",
-    "analytics"
-  ],
   "vendor": {
-    "name": "Maxon Motor AG",
-    "email": "MIND.Noreply@maxongroup.com"
+    "name": "Maxon Motor AG"
   },
-  "executable": "mind",
-  "links": {
-    "homepage": "https://www.maxongroup.com"
-  },
+  "title": "MIND",
+  "description": "Motion Insights and Diagnostics — predictive maintenance for drive systems.",
+  "scopes-declaration": [
+    {
+      "identifier": "mind.web",
+      "name": "MIND Web Interface",
+      "description": "Access to the MIND web application",
+      "scopes": [
+        {
+          "identifier": "mind.web.r",
+          "name": "Read",
+          "description": "Read-only access to MIND"
+        },
+        {
+          "identifier": "mind.web.rw",
+          "name": "Read and Write",
+          "description": "Full access to MIND"
+        }
+      ]
+    }
+  ],
   "services": {
     "proxyMapping": [
       {
-        "name": "mind-web",
-        "port": 8000,
-        "type": "http",
-        "url": "/mind/"
+        "name": "mind",
+        "url": "/mind",
+        "binding": "http://localhost:8000",
+        "restricted": []
       }
     ]
   },
-  "requiredCapabilities": [],
-  "supportedCapabilities": []
+  "menus": {
+    "sidebar": [
+      {
+        "id": "mind",
+        "title": "MIND",
+        "icon": "Bosch-Ic-chart-line",
+        "link": "/mind/?token=${bearertoken}"
+      }
+    ],
+    "settings": [],
+    "overview": [
+      {
+        "id": "mind",
+        "title": "MIND",
+        "icon": "Bosch-Ic-chart-line",
+        "link": "/mind/?token=${bearertoken}"
+      }
+    ]
+  }
 }

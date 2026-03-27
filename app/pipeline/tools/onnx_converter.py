@@ -4,10 +4,14 @@ import pandas as pd
 from skl2onnx import convert_sklearn
 import onnxruntime
 from skl2onnx import update_registered_converter
-from catboost import CatBoostClassifier
+try:
+    from catboost import CatBoostClassifier
+    from catboost.utils import convert_to_onnx_object
+    _CATBOOST_AVAILABLE = True
+except ImportError:
+    _CATBOOST_AVAILABLE = False
 from onnx.helper import get_attribute_value
 from skl2onnx._parse import _apply_zipmap, _get_sklearn_operator_name
-from catboost.utils import convert_to_onnx_object
 
 from skl2onnx.common.data_types import (
     FloatTensorType,
@@ -134,11 +138,12 @@ def skl2onnx_convert_catboost(scope, operator, container):
     )
 
 
-update_registered_converter(
-    CatBoostClassifier,
-    "CatBoostCatBoostClassifier",
-    calculate_linear_classifier_output_shapes,
-    skl2onnx_convert_catboost,
-    parser=skl2onnx_parser_castboost_classifier,
-    options={"nocl": [True, False], "zipmap": [True, False, "columns"]},
-)
+if _CATBOOST_AVAILABLE:
+    update_registered_converter(
+        CatBoostClassifier,
+        "CatBoostCatBoostClassifier",
+        calculate_linear_classifier_output_shapes,
+        skl2onnx_convert_catboost,
+        parser=skl2onnx_parser_castboost_classifier,
+        options={"nocl": [True, False], "zipmap": [True, False, "columns"]},
+    )

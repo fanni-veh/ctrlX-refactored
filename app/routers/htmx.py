@@ -460,9 +460,9 @@ async def predict_preview(file: UploadFile = File(None),
 
 @router.post('/train/run')
 async def train_run(background_tasks: BackgroundTasks,
-                    good_cycles: List[str] = Form(...),
-                    bad_cycles: List[str] = Form(...),
-                    cycles_to_remove: List[str] = Form(...),
+                    good_cycles: Optional[List[str]] = Form(default=None),
+                    bad_cycles: Optional[List[str]] = Form(default=None),
+                    cycles_to_remove: Optional[List[str]] = Form(default=None),
                     dataset_name: str = Form(...),
                     application_id: Optional[int] = Form(None),
                     config: Optional[str] = Form(None),
@@ -492,7 +492,7 @@ async def train_run(background_tasks: BackgroundTasks,
             await db.commit()
             logger.info(f"Disabled cycles with ids: {', '.join(cycles_to_remove)} by user_id: {user.id}")
 
-        tskParam.using_cycle_ids = set(map(int, good_cycles + bad_cycles))
+        tskParam.using_cycle_ids = set(map(int, (good_cycles or []) + (bad_cycles or [])))
         tskParam.dataset_name = dataset_name
 
         if user.isAdmin() and config:
@@ -513,8 +513,8 @@ async def train_run(background_tasks: BackgroundTasks,
 
 @router.post('/predict/run')
 async def predict_run(background_tasks: BackgroundTasks,
-                      unknown_cycles: List[str] = Form(...),
-                      cycles_to_remove: List[str] = Form(...),
+                      unknown_cycles: Optional[List[str]] = Form(default=None),
+                      cycles_to_remove: Optional[List[str]] = Form(default=None),
                       dataset_name: str = Form(...),
                       train_run_id: str = Form(...),
                       application_id: Optional[int] = Form(None),
