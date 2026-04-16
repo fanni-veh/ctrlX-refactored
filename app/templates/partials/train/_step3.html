@@ -106,7 +106,7 @@
         htmx.process(loader);
         
         if (response.state === "error"){
-          showTrainError(response.message);
+          showTrainError((response.state_metadata && response.state_metadata.message) || "An unknown error occurred.");
           return;
         } 
         

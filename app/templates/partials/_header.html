@@ -2,7 +2,7 @@
 
 <nav class="navbar navbar-expand-lg  navbar-dark bg-black py-2 border-bottom border-1 border-dark sticky-top">
     <div class="container-fluid">
-      <a href="/" class="navbar-brand ms-4 d-flex flex-column align-items-end">
+      <a href="{{ url_for('root') }}" class="navbar-brand ms-4 d-flex flex-column align-items-end">
         <div class="d-flex align-items-baseline">
             <img src="{{ url_for('static', path='/logo.svg') }}" alt="Logo" class="logo me-2" height="27px">      
             <span class="display-5 text-white" style="font-weight: unset;">{{mind}}</span>  
@@ -15,7 +15,7 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <div class="navbar-nav justify-content-center flex-grow-1">
-            <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/', '#'] %}active{% endif %}" aria-current="page" href="/">{{menu_home | upper}}</a>
+            <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/', '#'] %}active{% endif %}" aria-current="page" href="{{ url_for('root') }}">{{menu_home | upper}}</a>
             <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/train'] %}active{% endif %}" href="{{ url_for('train_ui') }}">{{menu_train | upper}}</a>
             <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/predict'] %}active{% endif %}" href="{{ url_for('predict_ui') }}">{{menu_predict | upper}}</a>
             <a class="nav-link text-white fw-bold ms-lg-5 {% if request.path in ['/analytics'] %}active{% endif %}" href="{{ url_for('analytics') }}">{{menu_data_explorer | upper}}</a>

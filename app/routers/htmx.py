@@ -436,15 +436,18 @@ async def predict_preview(file: UploadFile = File(None),
                     }
                     context['train_app'] = app
 
-                run_data = [
-                    {
+                run_data = []
+                for run in runs:
+                    active_models = [m for m in run.models if not m.disabled]
+                    accuracies = [m.model_metadata['scores']['accuracy'] for m in active_models if m.model_metadata.get('scores', {}).get('accuracy') is not None]
+                    accuracy_str = f"{round(mean(accuracies) * 100, 2)}%" if accuracies else "N/A"
+                    run_data.append({
                         "id": run.id,
                         "datasetname": run.dataset_name,
                         "time": Utils.strftime(run.time_last_activity),
-                        "count_models": sum(1 for model in run.models if not model.disabled),
-                        "accuracy": f"{round(mean([model.model_metadata['scores']['accuracy'] for model in run.models if not model.disabled]) * 100, 2)}%"
-                    } for run in runs
-                ]
+                        "count_models": len(active_models),
+                        "accuracy": accuracy_str,
+                    })
                 context['train_runs'] = run_data
 
         context['data'] = result

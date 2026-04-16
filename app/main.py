@@ -19,7 +19,7 @@ from app.scripts.auth import get_effective_user
 from app.scripts.database_helper import load_measurements_by_app
 from app.scripts.report_service import ReportService
 from app.utils import Utils
-from app.routers import user, api, prometheus, htmx
+from app.routers import user, api, prometheus, htmx, logs, live
 from app.routers.prometheus import PrometheusMiddleware
 import logging
 from app.database import session_manager
@@ -90,6 +90,8 @@ app.include_router(user.router)
 app.include_router(api.router)
 app.include_router(prometheus.router)
 app.include_router(htmx.router)
+app.include_router(logs.router)
+app.include_router(live.router)
 
 yaml = YAML()
 yaml.preserve_quotes = True
@@ -99,7 +101,8 @@ yaml.preserve_quotes = True
 async def not_found_exception_handler(request: Request, exc: HTTPException):
     if request.url.path.startswith("/api/"):
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-    return RedirectResponse(url="/")
+    root = os.environ.get("SNAP_NAME", "")
+    return RedirectResponse(url=f"/{root}" if root else "/")
 
 
 @app.get('/')
@@ -387,8 +390,14 @@ if os.environ.get("SNAP"):
 
     async def app(scope, receive, send):  # noqa: F811
         if scope["type"] in ("http", "websocket"):
+            scope = dict(scope)
+            # Strip /mind prefix so FastAPI routes match
             path = scope.get("path", "")
             if path.startswith(_PREFIX):
-                scope = dict(scope)
                 scope["path"] = path[len(_PREFIX):] or "/"
+            # Fix scheme: ctrlX proxy is HTTPS but forwards via HTTP internally
+            headers = dict(scope.get("headers", []))
+            proto = headers.get(b"x-forwarded-proto", b"").decode()
+            if proto:
+                scope["scheme"] = proto
         await _inner_app(scope, receive, send)

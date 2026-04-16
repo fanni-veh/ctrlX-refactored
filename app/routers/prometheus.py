@@ -16,13 +16,12 @@ ALLOWED_NETWORKS = [
     ipaddress.ip_network("127.0.0.0/8"),     # Localhost
 ]
 
-prom_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR")
+import tempfile
+prom_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR") or os.path.join(tempfile.gettempdir(), "prometheus_metrics")
+os.environ.setdefault("PROMETHEUS_MULTIPROC_DIR", prom_dir)
 
-if prom_dir:
-    shutil.rmtree(prom_dir, ignore_errors=True)  # Clear dir
-    os.makedirs(prom_dir, exist_ok=True)  # Create dir
-else:
-    raise ValueError("PROMETHEUS_MULTIPROC_DIR has no value!")
+shutil.rmtree(prom_dir, ignore_errors=True)
+os.makedirs(prom_dir, exist_ok=True)
 
 pid = os.getpid()
 

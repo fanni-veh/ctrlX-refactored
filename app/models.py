@@ -412,7 +412,7 @@ class MeasuringPoint(TSABaseModel):
             """Get the corresponding SQLAlchemy Column object for this metric."""
             return getattr(MeasuringPoint, self.value)
 
-    id = Column(BigInteger, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     application_id = Column(Integer, ForeignKey("application.id", ondelete="CASCADE"), nullable=False)
     cycle_id = Column(Integer, ForeignKey("cycledata.id", ondelete="CASCADE"), nullable=False)
     timestamp = Column(TIMESTAMP(timezone=True), nullable=False)
