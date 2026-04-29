@@ -2,15 +2,14 @@ from contextlib import asynccontextmanager
 import io
 from logging.handlers import RotatingFileHandler
 import os
-from pathlib import Path
 import time
 from typing import Optional
 import zipfile
-from fastapi import Form, status
+from fastapi import status
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, HTTPException, Request, Depends, Response
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 import pandas as pd
@@ -19,7 +18,7 @@ from app.scripts.auth import get_effective_user
 from app.scripts.database_helper import load_measurements_by_app
 from app.scripts.report_service import ReportService
 from app.utils import Utils
-from app.routers import user, api, prometheus, htmx, logs, live
+from app.routers import api, prometheus, htmx, logs, live
 from app.routers.prometheus import PrometheusMiddleware
 import logging
 from app.database import session_manager
@@ -29,7 +28,6 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import set_committed_value
 from app.config import setting
 from app.scripts.tsa_logging import create_logger
-from ruamel.yaml import YAML
 from uuid import UUID
 
 tsa_logger = create_logger("main", output_file="mind_api")
@@ -86,15 +84,11 @@ app.add_middleware(CORSMiddleware,
 app.add_middleware(PrometheusMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)  # Compress responses larger than 1000 bytes
 
-app.include_router(user.router)
 app.include_router(api.router)
 app.include_router(prometheus.router)
 app.include_router(htmx.router)
 app.include_router(logs.router)
 app.include_router(live.router)
-
-yaml = YAML()
-yaml.preserve_quotes = True
 
 
 @app.exception_handler(status.HTTP_404_NOT_FOUND)
@@ -130,85 +124,6 @@ def train_ui(context: dict = Depends(Utils.prepareBaseContext)):
 def import_zip(context: dict = Depends(Utils.prepareBaseContext)):
     return templates.TemplateResponse("import.html", context)
 
-
-@app.get('/admin')
-async def admin(context: dict = Depends(Utils.prepareBaseContext),
-                user: Optional[models.User] = Depends(get_effective_user),
-                db: AsyncSession = Depends(database.get_db)):
-    if not user.isAdmin():
-        return RedirectResponse(url="/", status_code=status.HTTP_401_UNAUTHORIZED)
-
-    # Load all users
-    users = (await db.execute(
-        select(models.User)
-        .options(selectinload(models.User.motors))
-        .order_by(models.User.id))
-    ).scalars().all()
-    dto_users = []
-    for user in users:
-        dto_users.append({
-            'email': user.email,
-            'role': user.role.value,
-            'id': user.id,
-            'disabled': user.disabled,
-            'motors': [m.id for m in user.motors],
-            'last_login': Utils.strftime(user.last_login)
-        })
-    context['users'] = dto_users
-
-    # load pipeline.yml keep comments
-    file = Path(os.environ.get('SNAP_COMMON', '.')) / 'model_config.yaml'
-    config = file.read_text(encoding='utf-8') if file.exists() else ""
-    context['model_config'] = config
-    return templates.TemplateResponse("admin.html", context)
-
-
-@app.post('/update-config', response_class=HTMLResponse)
-async def update_config(pipelineYml: str = Form(...),
-                        user: Optional[models.User] = Depends(get_effective_user)):
-    if not user.isAdmin():
-        return RedirectResponse(url="/", status_code=status.HTTP_401_UNAUTHORIZED)
-
-    # write input to model_config.yaml
-    try:
-        config = yaml.load(pipelineYml)
-        model_config_path = Path(os.environ.get('SNAP_COMMON', '.')) / 'model_config.yaml'
-        with open(model_config_path, 'w') as file:
-            yaml.dump(config, file)
-            tsa_logger.info("Configuration updated by user: %s", user.email)
-            return '<div class="alert alert-success">Configuration saved successfully!</div>'
-    except Exception:
-        tsa_logger.exception("Error updating configuration")
-        return '<div class="alert alert-danger">Error saving configuration. Please try again.</div>'
-
-
-@app.post("/update-user", response_class=HTMLResponse)
-async def update_user(user_id: int = Form(...),
-                      role: Optional[str] = Form(...),
-                      motors: Optional[str] = Form(...),
-                      disabled: Optional[bool] = Form(None),
-                      user: Optional[models.User] = Depends(get_effective_user),
-                      db: AsyncSession = Depends(database.get_db)):
-    if not user.isAdmin():
-        return RedirectResponse(url="/", status_code=status.HTTP_401_UNAUTHORIZED)
-    # Update user in the database
-    stmt = select(models.User).options(selectinload(models.User.motors)).where(models.User.id == user_id)
-    db_user = (await db.execute(stmt)).scalars().one_or_none()
-    if db_user is None:
-        return '<div class="alert alert-danger">User not found!</div>'
-    db_user.role = role
-    db_user.disabled = disabled
-    motor_ids = [int(mid) for mid in motors.split(',') if mid.strip().isdigit()]
-    if motor_ids:
-        motor_stmt = select(models.Motor).where(models.Motor.id.in_(motor_ids))
-        motors_list = (await db.execute(motor_stmt)).scalars().all()
-        db_user.motors.clear()
-        db_user.motors.update(motors_list)
-    else:
-        db_user.motors.clear()
-    await db.commit()
-    tsa_logger.info("User %s updated by admin %s", db_user.email, user.email)
-    return '<div class="alert alert-success">User updated successfully!</div>'
 
 
 @app.get('/predict')

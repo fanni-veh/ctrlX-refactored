@@ -1,0 +1,277 @@
+<div class="rounded p-4 bg-dark w-full">
+    <h4>Connection to ctrlX motor</h4>
+    <p>Here you can connect and run cycles on the motor</p>
+
+
+    <form id="connect_form" method="post" class="text-start gap-3 d-flex flex-column mx-auto w-fit">
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="ctrlx_ip">ctrlX IP</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="192.168.1.1" id="ctrlx_ip" name="ctrlx_ip"
+                    type="text">
+            </div>
+            <div>
+                <label class="d-block small" for="axis_name">axis name</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="Axis_1" id="axis_name" name="axis_name" type="text">
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="username">username</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="boschrexroth" id="username" name="username"
+                    type="text">
+            </div>
+            <div>
+                <label class="d-block small" for="password">password</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="Muenchen81825" id="password" name="password"
+                    type="password">
+            </div>
+        </div>
+        <button type="submit" class="px-3 py-2 bg-black border border-2 border-danger rounded-2 w-25">Connect</button>
+    </form>
+    <div id="connect_output">
+    </div>
+
+
+    <form action="/api/live/status" method="get" target="_blank" class="align-items-center">
+        <button onsubmit="" type="submit"
+            class="px-3 py-2 bg-black border border-2 border-danger rounded-2">Status</button>
+    </form>
+
+
+    <form id="start_form" method="post" class="text-start gap-3 d-flex flex-column mx-auto w-fit">
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="ctrlx_ip">ctrlX IP</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="192.168.1.1" id="ctrlx_ip" name="ctrlx_ip"
+                    type="text">
+            </div>
+            <div>
+                <label class="d-block small" for="application_id">Application ID</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="1" id="application_id" name="application_id"
+                    type="number">
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="username">username</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="boschrexroth" id="username" name="username"
+                    type="text">
+            </div>
+            <div>
+                <label class="d-block small" for="password">password</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="Muenchen81825" id="password" name="password"
+                    type="password">
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="axis_name">axis name</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="Axis_1" id="axis_name" name="axis_name" type="text">
+            </div>
+            <div>
+                <label class="d-block small" for="classification">classification</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="unknown" id="classification" name="classification"
+                    type="text">
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="target_pos">target position</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="90" id="target_pos" name="target_pos" type="number">
+            </div>
+            <div>
+                <label class="d-block small" for="home_pos">home position</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="0" id="home_pos" name="home_pos" type="number">
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="velocity">velocity</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="3600" id="velocity" name="velocity" type="number">
+            </div>
+            <div>
+                <label class="d-block small" for="acceleration">acceleration</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="3600" id="acceleration" name="acceleration"
+                    type="number">
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="time_on_s">time_on_s</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="2" id="time_on_s" name="time_on_s" type="number">
+            </div>
+            <div>
+                <label class="d-block small" for="time_pause_s">time_pause_s</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="0.5" id="time_pause_s" name="time_pause_s"
+                    type="number">
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="load_torque">load_torque</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="0" id="load_torque" name="load_torque" type="number">
+            </div>
+            <div>
+                <label class="d-block small" for="spike_torque">spike_torque</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="0" id="spike_torque" name="spike_torque"
+                    type="number">
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <div>
+                <label class="d-block small" for="spike_start_s">spike_start_s</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="0" id="spike_start_s" name="spike_start_s"
+                    type="number">
+            </div>
+            <div>
+                <label class="d-block small" for="spike_length_s">spike_length_s</label>
+                <input class="px-2 py-1 rounded-1 border-0" value="0" id="spike_length_s" name="spike_length_s"
+                    type="number">
+            </div>
+        </div>
+        <button type="submit" class="px-3 py-2 bg-black border border-2 border-danger rounded-2 w-25">Start</button>
+    </form>
+    <div id="start_output">
+    </div>
+
+    <form id="stop_form" method="post" class="text-start gap-3 d-flex flex-column mx-auto w-fit">
+        <div class="d-flex gap-3">
+            <label class="d-block small" for="application_id_stop">Application ID</label>
+            <input class="px-2 py-1 rounded-1 border-0" value="1" id="application_id_stop" name="application_id"
+                type="number">
+        </div>
+        <button type="submit" class="px-3 py-2 bg-black border border-2 border-danger rounded-2 w-25">Stop</button>
+    </form>
+    <div id="stop_output">
+    </div>
+</div>
+<script>
+    function onSubmitConnect() {
+        const ctrlx_ip = document.getElementById("ctrlx_ip").value;
+        const axis_name = document.getElementById("axis_name").value;
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        const submissionData = {
+            ctrlx_ip,
+            axis_name,
+            username,
+            password
+        }
+
+        fetch("/api/live/connect", {
+            method: "POST",
+            body: JSON.stringify(submissionData),
+            headers: {
+                "Content-type": "application/json"
+            }
+        }).then(res => res.json())
+            .then(data => {
+                document.getElementById("connect_output").innerHTML = JSON.stringify(data)
+                document.getElementById("connect_output").className = "px-3 py-2 border rounded border-success bg-success-subtle"
+            })
+            .catch(err => {
+                document.getElementById("connect_output").innerHTML = "something went wrong, try again later."
+                document.getElementById("connect_output").className = "px-3 py-2 border rounded border-danger bg-danger-subtle"
+            });
+    }
+
+    function onSubmitStart() {
+        const application_id = document.getElementById("application_id").value;
+        const ctrlx_ip = document.getElementById("ctrlx_ip").value;
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const axis_name = document.getElementById("axis_name").value;
+        const classification = document.getElementById("classification").value;
+        const target_pos = document.getElementById("target_pos").value;
+        const home_pos = document.getElementById("home_pos").value;
+        const velocity = document.getElementById("velocity").value;
+        const acceleration = document.getElementById("acceleration").value;
+        const time_on_s = document.getElementById("time_on_s").value;
+        const time_pause_s = document.getElementById("time_pause_s").value;
+        const load_torque = document.getElementById("load_torque").value;
+        const spike_torque = document.getElementById("spike_torque").value;
+        const spike_start_s = document.getElementById("spike_start_s").value;
+        const spike_length_s = document.getElementById("spike_length_s").value;
+
+        const submissionData = {
+            application_id,
+            ctrlx_ip,
+            username,
+            password,
+            axis_name,
+            classification,
+            target_pos,
+            home_pos,
+            velocity,
+            acceleration,
+            time_on_s,
+            time_pause_s,
+            load_torque,
+            spike_torque,
+            spike_start_s,
+            spike_length_s
+        }
+
+        fetch("/api/live/start", {
+            method: "POST",
+            body: JSON.stringify(submissionData),
+            headers: {
+                "Content-type": "application/json"
+            }
+        }).then(res => res.json())
+            .then(data => {
+                document.getElementById("start_output").innerHTML = JSON.stringify(data)
+                document.getElementById("start_output").className = "px-3 py-2 border rounded border-success bg-success-subtle"
+            })
+            .catch(err => {
+                document.getElementById("start_output").innerHTML = "something went wrong, try again later."
+                document.getElementById("start_output").className = "px-3 py-2 border rounded border-danger bg-danger-subtle"
+            });
+    }
+
+    function onSubmitStop() {
+        const application_id = document.getElementById("application_id_stop").value;
+
+
+        const submissionData = {
+            application_id
+        }
+        console.log(submissionData)
+
+        fetch(`/api/live/stop?application_id=${application_id}`,
+            { method: "POST" }
+        ).then(res => res.json())
+            .then(data => {
+                document.getElementById("stop_output").innerHTML = JSON.stringify(data)
+                document.getElementById("stop_output").className = "px-3 py-2 border rounded border-success bg-success-subtle"
+            })
+            .catch(err => {
+                document.getElementById("stop_output").innerHTML = "something went wrong, try again later."
+                document.getElementById("stop_output").className = "px-3 py-2 border rounded border-danger bg-danger-subtle"
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('connect_form').onsubmit = function (event) {
+            event.preventDefault();
+            onSubmitConnect();
+        }
+    })
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('start_form').onsubmit = function (event) {
+            event.preventDefault();
+            onSubmitStart();
+        }
+    })
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('stop_form').onsubmit = function (event) {
+            event.preventDefault();
+            onSubmitStop();
+        }
+    })
+</script>
+</div>

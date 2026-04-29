@@ -193,11 +193,21 @@ class LiveCapture:
         for t in self._threads:
             t.join(timeout=2.0)
 
-        # Power off on best-effort basis
         try:
+            # Abort any in-progress motion first
+            self.dl.write_node(f"motion/axs/{self.axis_name}/cmd/abort", True, "bool8")
+            # Wait for axis to leave DISCRETE_MOTION (poll state)
+            deadline = time.monotonic() + 5.0
+            while time.monotonic() < deadline:
+                state_val = self._read_safe(f"{self._axis_base}/state/values/actual", {})
+                if isinstance(state_val, dict):
+                    axs_state = state_val.get("axsState", "")
+                    if axs_state not in ("DISCRETE_MOTION", "CONTINUOUS_MOTION", "HOMING"):
+                        break
+                time.sleep(0.1)
             self.dl.write_node(f"motion/axs/{self.axis_name}/cmd/power", False, "bool8")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("LiveCapture: power-off sequence failed: %s", e)
 
         self.dl.close()
         logger.info("LiveCapture: stopped — %d cycles collected", len(self._completed_cycles))
@@ -390,7 +400,7 @@ class LiveCapture:
             with self._lock:
                 samples_snapshot = list(self._current_samples)
 
-            min_samples = int(self._time_on_s / PDO_PERIOD_S / 2)  # at least half the hold time worth of samples
+            min_samples = max(5, int(self._time_on_s / 0.1 / 2))  # at least half the hold time at ~100ms/read
             if len(samples_snapshot) >= min_samples:
                 self._completed_cycles.append(CompletedCycle(
                     classification=self.classification,

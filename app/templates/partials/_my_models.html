@@ -6,9 +6,7 @@
       <tr>
         <th onclick="sortTable(0)">{{application}} <i class="bi bi-arrow-down-up ms-1"></i></th>
         <th onclick="sortTable(1)" class="d-none d-md-table-cell">{{dataset}} <i class="bi bi-arrow-down-up ms-1"></i></th>
-        {% if user_role != 'exhibition' %}
         <th onclick="sortTable(2)">{{number_of_models}} <i class="bi bi-arrow-down-up ms-1"></i></th>
-        {% endif %}
         <th>{{actions}}</th>
       </tr>
     </thead>

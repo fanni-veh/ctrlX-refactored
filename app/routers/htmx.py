@@ -331,10 +331,6 @@ async def set_language(request: Request, current_url: str = None, context: dict 
     return response
 
 
-@router.get('/login')
-def login(context: dict = Depends(Utils.prepareBaseContext)):
-    return templates.TemplateResponse("partials/_login.html", context)
-
 
 @router.post('/import')
 async def import_csv(

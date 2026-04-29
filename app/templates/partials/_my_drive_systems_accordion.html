@@ -9,7 +9,7 @@
 {% for motor in data %}
 <div class="accordion-item border-top">
   <h2 class="accordion-header" id="heading{{ loop.index }}">
-    <button class="accordion-button {% if user_role != 'exhibition' %}collapsed{%endif%}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="{% if user_role == 'exhibition' %}true{%else%}false{% endif %}" aria-controls="collapse{{ loop.index }}">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" aria-controls="collapse{{ loop.index }}">
       <div class="container-fluid">
         <div class="row">
           <div class="col-6 col-md-3 fw-bold">{{ motor.machine }}</div>
@@ -23,16 +23,14 @@
       </div>
     </button>
   </h2>
-  <div id="collapse{{ loop.index }}" class="accordion-collapse {%if user_role == 'exhibition' %}show{%else%}collapse{% endif %}" aria-labelledby="heading{{ loop.index }}">
+  <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading{{ loop.index }}">
     <div class="accordion-body p-3 p-sm-2 p-md-3 p-lg-4">
       <div class="table-responsive">
         <table class="table table-hover table-borderless align-middle">
           <thead class="border-bottom border-white">
             <tr>
               <th class="fw-bold fs-6" style="width: 20%">{{application}}</th>
-              {% if user_role != "exhibition" %}
-                <th class="fw-bold fs-6 d-none d-md-table-cell" style="width: 15%">{{cycle_amount}}</th>
-              {% endif %}
+              <th class="fw-bold fs-6 d-none d-md-table-cell" style="width: 15%">{{cycle_amount}}</th>
               <th class="fw-bold fs-6">{{health_state}}</th>
               <th class="fw-bold fs-6" style="width: 25%">{{last_predict}}</th>
               <th class="fw-bold fs-6" style="width: 10%">{{actions}}</th>

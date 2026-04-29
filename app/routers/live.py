@@ -194,8 +194,7 @@ async def start_capture(
 async def stop_capture(
     request: Request,
     application_id: int = Query(..., description="Application ID to save cycles under"),
-    db: AsyncSession = Depends(database.get_db),
-    user: models.User = Depends(get_effective_user),
+    db: AsyncSession = Depends(database.get_db)
 ):
     """
     Stop the running capture session and save all buffered cycles to the database.
@@ -219,8 +218,8 @@ async def stop_capture(
 
     cycles_saved, points_saved = await _flush_cycles_to_db(completed, application_id, db)
     logger.info(
-        "Saved %d live cycles (%d points) for application %s by user %s",
-        cycles_saved, points_saved, application_id, user.email,
+        "Saved %d live cycles (%d points) for application %s",
+        cycles_saved, points_saved, application_id
     )
     return {"cycles_saved": cycles_saved, "points_saved": points_saved}
 

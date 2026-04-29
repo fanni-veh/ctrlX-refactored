@@ -2,9 +2,7 @@
 {% for app in data %}
     <tr>
         <td scope="row"><span class="fw-bold">{{ app.context_code }}</span></td>
-        {% if user_role != "exhibition" %}
-            <td scope="row" class="d-none d-md-table-cell"><span>{{ app.cycles }}</span></td>
-        {% endif %}
+        <td scope="row" class="d-none d-md-table-cell"><span>{{ app.cycles }}</span></td>
         <td>
         <div class="d-flex align-items-center justify-content-center">
             <div class="progress w-100">
@@ -16,9 +14,7 @@
         <td>
             <div class="d-flex align-items-center justify-content-center gap-2 flex-nowrap">
                 <a href="/report/{{app.run_id}}" class="btn btn-outline-primary btn-sm" title="{{view_details}}"><i class="bi bi-info-circle"></i></a>
-                {% if user_role != 'exhibition' %}
-                    <a href="/analytics#app{{app.id}}" class="btn btn-outline-primary btn-sm" title="{{explore_application}}"><i class="bi bi-collection"></i></a>
-                {% endif %}
+                <a href="/analytics#app{{app.id}}" class="btn btn-outline-primary btn-sm" title="{{explore_application}}"><i class="bi bi-collection"></i></a>
                 <a href="/predict/{{app.id}}" class="btn btn-outline-success btn-sm" title="{{start_new_prediction}}">
                 <i class="bi bi-play-circle"></i>
                 </a>
