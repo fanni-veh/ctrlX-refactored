@@ -141,6 +141,7 @@ class Utils:
         context.update({'timestamp': int(timestamp)})
         context.update({'time_display_long': Utils.strftime(datetime.fromtimestamp(timestamp, tz=timezone.utc))})
         context.update({'time_display_short': datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime("%Y%m%d%H%M%S")})
+        context.update({'root_path': request.scope.get('root_path', '')})
         return context
 
     @staticmethod

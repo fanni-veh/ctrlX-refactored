@@ -110,7 +110,15 @@ class BaseClass:
 
         self._logger.info('Initialising base class.')
 
-        self._config: dict = pipeline_config or yaml.safe_load(open('model_config.yaml', 'r'))
+        if pipeline_config:
+            self._config = pipeline_config
+        else:
+            _snap_common = os.environ.get('SNAP_COMMON', '')
+            _config_path = os.path.join(_snap_common, 'model_config.yaml') if _snap_common else 'model_config.yaml'
+            if not os.path.exists(_config_path):
+                _config_path = 'model_config.yaml'  # fallback to CWD (local dev)
+            with open(_config_path, 'r') as _f:
+                self._config = yaml.safe_load(_f)
 
         # Data
         self._input_ts_df = data
