@@ -1,6 +1,7 @@
 <div id="content_step_1" class="container">
   <div class="carousel-item active text-center">
-    <form id="uploadForm" hx-boost="true" hx-post="/htmx/predict/preview" hx-target="#preview" hx-encoding="multipart/form-data" hx-trigger="submit">
+    <form id="uploadForm" hx-boost="true" hx-post="/htmx/predict/preview" hx-target="#preview"
+      hx-encoding="multipart/form-data" hx-trigger="submit">
       {% if application_dto is defined %}
       <h1>{{ motor_quality % application_dto.motor.part }}</h1>
       {% else %}
@@ -8,17 +9,20 @@
       {% endif %}
       <p>{{choose_data_to_predict}}</p>
       <div id="dataSourceSelectionBox" class="d-grid">
-        <button type="button" class="btn btn-secondary btn-lg" onclick="showDatabaseList()">{{ load_from_database }}</button>
+        <button type="button" class="btn btn-secondary btn-lg" onclick="showDatabaseList()">{{ load_from_database
+          }}</button>
         {% if application_dto is defined %}
         <input type="hidden" name="train_app_id" value="{{application_dto.id}}" />
-        <div id="database_container" class="d-none" hx-target="this" hx-get="/htmx/apps_from_db/predict" hx-vals='{"app_id":{{application_dto.id}}}' hx-trigger="load" hx-swap="innerHTML" hx-preserve>
+        <div id="database_container" class="d-none" hx-target="this" hx-get="/htmx/apps_from_db/predict"
+          hx-vals='{"app_id":{{application_dto.id}}}' hx-trigger="load" hx-swap="innerHTML" hx-preserve>
           <div class="p-4">
             <span class="loading-spinner"></span>
             <span id="loader">{{ loading }} ...</span>
           </div>
         </div>
         {% else %}
-        <div id="database_container" class="d-none" hx-target="this" hx-get="/htmx/apps_from_db/predict" hx-trigger="load" hx-swap="innerHTML" hx-preserve>
+        <div id="database_container" class="d-none" hx-target="this" hx-get="/htmx/apps_from_db/predict"
+          hx-trigger="load" hx-swap="innerHTML" hx-preserve>
           <div class="p-4">
             <span class="loading-spinner"></span>
             <span id="loader">{{ loading }} ...</span>
@@ -27,13 +31,17 @@
         {% endif %}
 
         <label for="csvFileInput" class="form-label">{{ load_from_zip }}</label>
-        <input type="file" class="form-control" id="csvFileInput" name="file" accept=".zip" onchange="validateForm(this)" />
+        <input type="file" class="form-control" id="csvFileInput" name="file" accept=".zip"
+          onchange="validateForm(this)" />
         <div class="my-3">
-          <small>{{download_example_file}}</small><br /> 
-          <span class="text-info text-decoration-underline" role="button" hx-on:click="window.location.href='/static/example_predict_file.zip'" class="link">example_predict_file.zip</span>
+          <small>{{download_example_file}}</small><br />
+          <span class="text-info text-decoration-underline" role="button"
+            hx-on:click="window.location.href='/static/example_predict_file.zip'"
+            class="link">example_predict_file.zip</span>
         </div>
         <div class="d-flex justify-content-between mt-4">
-          <button type="submit" class="btn btn-primary w-100" type="button" id="loadPreviewBtn" onclick="carousel.next()" disabled>{{ preview }}</button>
+          <button type="submit" class="btn btn-primary w-100" type="button" id="loadPreviewBtn"
+            onclick="carousel.next()" disabled>{{ preview }}</button>
         </div>
       </div>
     </form>

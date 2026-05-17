@@ -7,7 +7,7 @@ memory.  When stop() is called the caller can read completed_cycles and flush
 them to the database via the /api/live/stop endpoint.
 
 Threading model (mirrors the original MACS .mc state machines):
-  _cyclic_thread  — reads sensor data every 5 ms  (PDO_PERIOD_S)
+  _cyclic_thread  — reads sensor data every 100 ms (PDO_PERIOD_S)
   _toggle_thread  — reads slow temperature data every 1 s
   _test_thread    — drives the motion sequence; one pass = one cycle
 """
@@ -24,7 +24,7 @@ from app.live_capture.datalayer import CtrlXDataLayer
 logger = logging.getLogger("live_capture.collector")
 
 # Timing constants (seconds) — mirror MACS timer periods
-PDO_PERIOD_S    = 0.005   # 5 ms cyclic data collection
+PDO_PERIOD_S    = 0.1     # 100 ms — HTTP latency floor (ctrlX Data Layer REST)
 TOGGLE_PERIOD_S = 1.0     # 1 s slow-data (temperature) read
 
 # EtherCAT path for the averaged current value — {AXIS} is replaced at init
@@ -123,7 +123,8 @@ class LiveCapture:
         self._rated_torque = 1
 
         # Thread synchronisation
-        self._lock    = threading.Lock()
+        self._lock       = threading.Lock()
+        self._stop_event = threading.Event()   # set by stop() to wake sleeping threads early
         self._running = False
         self._state   = STA_POWER_OFF
         self._error_info: str = ""
@@ -185,29 +186,24 @@ class LiveCapture:
         logger.info("LiveCapture: stopping")
         self._running  = False
         self._recording = False
+        self._stop_event.set()   # wake any sleeping hold/pause in the test thread
         with self._lock:
             self._current_samples = []  # discard any partial cycle in progress
 
         if self._test_thread:
-            self._test_thread.join(timeout=10.0)
+            self._test_thread.join(timeout=35.0)
         for t in self._threads:
             t.join(timeout=2.0)
 
+        # By this point the test thread has finished its current move and is at rest.
+        # Log the axis state for diagnostics, then power off.
         try:
-            # Abort any in-progress motion first
-            self.dl.write_node(f"motion/axs/{self.axis_name}/cmd/abort", True, "bool8")
-            # Wait for axis to leave DISCRETE_MOTION (poll state)
-            deadline = time.monotonic() + 5.0
-            while time.monotonic() < deadline:
-                state_val = self._read_safe(f"{self._axis_base}/state/values/actual", {})
-                if isinstance(state_val, dict):
-                    axs_state = state_val.get("axsState", "")
-                    if axs_state not in ("DISCRETE_MOTION", "CONTINUOUS_MOTION", "HOMING"):
-                        break
-                time.sleep(0.1)
+            sv = self._read_safe(f"{self._axis_base}/state/values/actual", {})
+            axs_state = sv.get("axsState", "unknown") if isinstance(sv, dict) else "unknown"
+            logger.info("LiveCapture: axis state before power-off: %s", axs_state)
             self.dl.write_node(f"motion/axs/{self.axis_name}/cmd/power", False, "bool8")
         except Exception as e:
-            logger.warning("LiveCapture: power-off sequence failed: %s", e)
+            logger.warning("LiveCapture: power-off failed: %s", e)
 
         self.dl.close()
         logger.info("LiveCapture: stopped — %d cycles collected", len(self._completed_cycles))
@@ -227,12 +223,30 @@ class LiveCapture:
             "act_velocity":    round(self._act_velocity, 1),
             "temp_motor_c":    round(self._temp_motor / 10, 1),
         }
+    
+    def get_status_and_cycle_types(self) -> dict:
+        good = sum(1 for c in self._completed_cycles if c.classification == "good")
+        bad = sum(1 for c in self._completed_cycles if c.classification == "bad")
+        unknown = sum(1 for c in self._completed_cycles if c.classification != "good" and c.classification != "bad")
+        return {
+            "running":         self._running,
+            "cycles_buffered": len(self._completed_cycles),
+            "cycle_counter":   self._cycle_counter,
+            "state":           hex(self._state),
+            "error":           self._error_info,
+            "act_position":    round(self._act_position, 3),
+            "act_velocity":    round(self._act_velocity, 1),
+            "temp_motor_c":    round(self._temp_motor / 10, 1),
+            "good_cycles":     good,
+            "bad_cycles":      bad,
+            "unknown_cycles":  unknown,
+        }
 
     # ── Background threads ───────────────────────────────────────────────────
 
     def _cyclic_thread(self):
         """
-        Reads sensor data every 5 ms.
+        Reads sensor data every PDO_PERIOD_S (100 ms).
         Mirrors UpdateCyclicDataArray() called from SIG_PERIOD_5MS in the original.
         """
         while self._running:
@@ -368,8 +382,8 @@ class LiveCapture:
 
             self._wait_position(self._target_pos, timeout=15.0)
 
-            # Hold at target
-            time.sleep(self._time_on_s)
+            # Hold at target — interruptible so stop() returns quickly
+            self._stop_event.wait(timeout=self._time_on_s)
 
             # Return home
             try:
@@ -400,7 +414,7 @@ class LiveCapture:
             with self._lock:
                 samples_snapshot = list(self._current_samples)
 
-            min_samples = max(5, int(self._time_on_s / 0.1 / 2))  # at least half the hold time at ~100ms/read
+            min_samples = max(5, int(self._time_on_s / PDO_PERIOD_S / 2))
             if len(samples_snapshot) >= min_samples:
                 self._completed_cycles.append(CompletedCycle(
                     classification=self.classification,
@@ -415,20 +429,20 @@ class LiveCapture:
                 logger.warning("LiveCapture: cycle %d discarded — only %d samples (min %d)",
                                self._cycle_counter, len(samples_snapshot), min_samples)
 
-            time.sleep(self._time_pause_s)
+            self._stop_event.wait(timeout=self._time_pause_s)
 
     def _wait_position(self, target_deg: float, timeout: float = 15.0, tolerance: float = 1.0):
         """
         Block until the motor reaches target_deg ± tolerance, or timeout expires.
-        Mirrors _wait_for_position() / SIG_TARGET_REACHED in the original.
+        Intentionally does NOT exit early on _running=False — the drive must finish
+        its current commanded move so the axis is at rest when stop() runs.
         """
         deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline and self._running:
+        while time.monotonic() < deadline:
             if abs(self._act_position - target_deg) <= tolerance:
                 return
             time.sleep(0.05)
-        if self._running:
-            logger.warning("LiveCapture: timeout waiting for %.1f°", target_deg)
+        logger.warning("LiveCapture: timeout waiting for %.1f°", target_deg)
 
     # ── Data layer helpers ───────────────────────────────────────────────────
 

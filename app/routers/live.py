@@ -20,6 +20,7 @@ from typing import Optional
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -31,8 +32,9 @@ from app.live_capture.collector import CompletedCycle, LiveCapture
 logger = logging.getLogger("live_capture")
 router = APIRouter(prefix="/api/live", tags=["Live Capture"])
 
-# Key used to store the active LiveCapture instance on app.state
+# Keys used to store the active LiveCapture instance and its application_id on app.state
 _CAPTURE_KEY = "_live_capture"
+_CAPTURE_APP_ID_KEY = "_live_capture_app_id"
 
 
 def _get_capture(request: Request) -> Optional[LiveCapture]:
@@ -41,6 +43,14 @@ def _get_capture(request: Request) -> Optional[LiveCapture]:
 
 def _set_capture(request: Request, capture: Optional[LiveCapture]):
     setattr(request.app.state, _CAPTURE_KEY, capture)
+
+
+def _get_capture_app_id(request: Request) -> Optional[int]:
+    return getattr(request.app.state, _CAPTURE_APP_ID_KEY, None)
+
+
+def _set_capture_app_id(request: Request, app_id: Optional[int]):
+    setattr(request.app.state, _CAPTURE_APP_ID_KEY, app_id)
 
 
 # ── Request models ────────────────────────────────────────────────────────────
@@ -78,13 +88,29 @@ class StartRequest(BaseModel):
 @router.get("/status")
 async def get_status(
     request: Request,
+    db: AsyncSession = Depends(database.get_db),
     user: models.User = Depends(get_effective_user),
 ):
     """Return the current capture session status, or an idle stub if none is active."""
     capture = _get_capture(request)
     if capture is None:
         return {"connected": False, "running": False, "cycles_buffered": 0}
-    return {"connected": True, **capture.get_status()}
+
+    live_status = {"connected": True, **capture.get_status_and_cycle_types()}
+
+    app_id = _get_capture_app_id(request)
+    if app_id is not None:
+        rows = (await db.execute(
+            select(models.CycleData.classification, func.count())
+            .where(models.CycleData.application_id == app_id)
+            .group_by(models.CycleData.classification)
+        )).all()
+        db_counts = {cls.label: cnt for cls, cnt in rows}
+        live_status["db_good_cycles"]    = db_counts.get("good", 0)
+        live_status["db_bad_cycles"]     = db_counts.get("bad", 0)
+        live_status["db_unknown_cycles"] = db_counts.get("unknown", 0)
+
+    return live_status
 
 
 @router.post("/connect")
@@ -133,7 +159,7 @@ async def start_capture(
             detail="A capture session is already running. Call /api/live/stop first.",
         )
 
-    # Verify the application exists and the user has access to it
+    # Verify the application exists; auto-create a default Motor+Application if not
     stmt = select(models.Application).where(
         models.Application.id == body.application_id,
         ~models.Application.disabled,
@@ -144,9 +170,41 @@ async def start_capture(
         )
     application = (await db.scalars(stmt)).one_or_none()
     if not application:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Application {body.application_id} not found or access denied",
+        motor = (await db.scalars(
+            select(models.Motor).where(
+                models.Motor.serial == "ctrlx-live",
+                models.Motor.part == "ctrlX",
+            )
+        )).one_or_none()
+        if motor is None:
+            motor = models.Motor(
+                serial="ctrlx-live",
+                part="ctrlX",
+                client="ctrlX",
+                machine=body.axis_name,
+            )
+            db.add(motor)
+            await db.flush()
+
+        application = (await db.scalars(
+            select(models.Application).where(
+                models.Application.motor_id == motor.id,
+                models.Application.context_code == "live",
+                models.Application.recipe == "live",
+            )
+        )).one_or_none()
+        if application is None:
+            application = models.Application(
+                motor_id=motor.id,
+                context_code="live",
+                recipe="live",
+            )
+            db.add(application)
+            await db.flush()
+
+        logger.info(
+            "Auto-created/reused Motor (id=%s) and Application (id=%s) for live capture",
+            motor.id, application.id,
         )
 
     capture = LiveCapture(
@@ -178,14 +236,15 @@ async def start_capture(
     # Start threads (returns quickly — actual motion runs in the background)
     await asyncio.get_event_loop().run_in_executor(None, capture.start)
     _set_capture(request, capture)
+    _set_capture_app_id(request, application.id)
 
     logger.info(
         "Live capture started for application %s by user %s",
-        body.application_id, user.email,
+        application.id, user.email,
     )
     return {
         "status":         "started",
-        "application_id": body.application_id,
+        "application_id": application.id,
         "classification": body.classification,
     }
 
@@ -211,12 +270,14 @@ async def stop_capture(
     # Stop threads (blocks until they exit)
     await asyncio.get_event_loop().run_in_executor(None, capture.stop)
     _set_capture(request, None)
+    _set_capture_app_id(request, None)
 
     completed = capture.completed_cycles
     if not completed:
         return {"cycles_saved": 0, "points_saved": 0}
 
     cycles_saved, points_saved = await _flush_cycles_to_db(completed, application_id, db)
+
     logger.info(
         "Saved %d live cycles (%d points) for application %s",
         cycles_saved, points_saved, application_id
@@ -234,6 +295,7 @@ async def discard_capture(
     if capture:
         await asyncio.get_event_loop().run_in_executor(None, capture.stop)
         _set_capture(request, None)
+        _set_capture_app_id(request, None)
     return {"status": "discarded"}
 
 
