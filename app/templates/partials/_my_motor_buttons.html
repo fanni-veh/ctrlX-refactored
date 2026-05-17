@@ -1,152 +1,346 @@
 <div class="rounded p-4 bg-dark w-full">
-    <h4>Connection to ctrlX motor</h4>
-    <p>Here you can connect and run cycles on the motor</p>
+    <h4>{{ live_title }}</h4>
+    <p>{{ live_subtitle }}</p>
 
+    <div class="d-flex gap-4">
+        <div class="w-100">
+            <form id="start_form" method="post" class="text-start gap-2 d-flex flex-column mx-auto">
+                <div class="d-flex gap-3">
+                    <div class="w-100">
+                        <label class="d-block small text-muted" for="ctrlx_ip">{{ live_ctrlx_ip }}</label>
+                        <input class="px-2 py-1 w-100 rounded-1 border-0" value="192.168.1.1" id="ctrlx_ip"
+                            name="ctrlx_ip" type="text">
+                    </div>
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="application_id">{{ live_application_id }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="1" id="application_id"
+                            name="application_id" type="number">
+                    </div>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="username">{{ live_username }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="boschrexroth" id="username"
+                            name="username" type="text">
+                    </div>
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="password">{{ live_password }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="Muenchen81825" id="password"
+                            name="password" type="password">
+                    </div>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="axis_name">{{ live_axis_name }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="Axis_1" id="axis_name" name="axis_name"
+                            type="text">
+                    </div>
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="classification">{{ live_classification }}</label>
+                        <select class="w-100 flex pt-1 pb-2 px-1 rounded-1 border-0" id="classification"
+                            name="classification">
+                            <option value="good">{{ good }}</option>
+                            <option value="bad">{{ bad }}</option>
+                            <option value="unknown">unknown</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="target_pos">{{ live_target_pos }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="90" id="target_pos" name="target_pos"
+                            type="number">
+                    </div>
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="home_pos">{{ live_home_pos }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="0" id="home_pos" name="home_pos"
+                            type="number">
+                    </div>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="velocity">{{ live_velocity }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="3600" id="velocity" name="velocity"
+                            type="number">
+                    </div>
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="acceleration">{{ live_acceleration }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="3600" id="acceleration"
+                            name="acceleration" type="number">
+                    </div>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="time_on_s">{{ live_time_on_s }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="2" id="time_on_s" name="time_on_s"
+                            type="number">
+                    </div>
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="time_pause_s">{{ live_time_pause_s }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="0.5" id="time_pause_s"
+                            name="time_pause_s" type="number">
+                    </div>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="load_torque">{{ live_load_torque }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="0" id="load_torque" name="load_torque"
+                            type="number">
+                    </div>
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="spike_torque">{{ live_spike_torque }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="0" id="spike_torque"
+                            name="spike_torque" type="number">
+                    </div>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="spike_start_s">{{ live_spike_start_s }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="0" id="spike_start_s"
+                            name="spike_start_s" type="number">
+                    </div>
+                    <div class="w-100">
+                        <label class="d-block text-muted small" for="spike_length_s">{{ live_spike_length_s }}</label>
+                        <input class="w-100 px-2 py-1 rounded-1 border-0" value="0" id="spike_length_s"
+                            name="spike_length_s" type="number">
+                    </div>
+                </div>
+            </form>
+        </div>
 
-    <form id="connect_form" method="post" class="text-start gap-3 d-flex flex-column mx-auto w-fit">
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="ctrlx_ip">ctrlX IP</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="192.168.1.1" id="ctrlx_ip" name="ctrlx_ip"
-                    type="text">
-            </div>
-            <div>
-                <label class="d-block small" for="axis_name">axis name</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="Axis_1" id="axis_name" name="axis_name" type="text">
-            </div>
-        </div>
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="username">username</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="boschrexroth" id="username" name="username"
-                    type="text">
-            </div>
-            <div>
-                <label class="d-block small" for="password">password</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="Muenchen81825" id="password" name="password"
-                    type="password">
-            </div>
-        </div>
-        <button type="submit" class="px-3 py-2 bg-black border border-2 border-danger rounded-2 w-25">Connect</button>
-    </form>
-    <div id="connect_output">
-    </div>
+        <div class="w-100 h-100">
+            <div class="border p-2 rounded gap-2 d-flex flex-column">
+                <div class="d-flex gap-2">
+                    <div class="w-100">
+                        <p class="m-0 text-muted">{{ live_status }}</p>
+                        <div id="status_box"
+                            class="h-75 p-2 d-flex align-items-center justify-content-center border text-center rounded">
+                            <p id="status" class="m-0">{{ live_standby }}</p>
+                        </div>
+                    </div>
 
+                    <div class="w-75">
+                        <p class="m-0 text-muted">{{ live_cycles_this_run }}</p>
+                        <div class="border p-2 rounded h-75 w-100">
+                            <p id="status_cycles_buffered" class="text-center fs-1 p-0 m-0">0</p>
+                        </div>
+                    </div>
+                </div>
 
-    <form action="/api/live/status" method="get" target="_blank" class="align-items-center">
-        <button onsubmit="" type="submit"
-            class="px-3 py-2 bg-black border border-2 border-danger rounded-2">Status</button>
-    </form>
+                <!-- Good cycles -->
+                <div>
+                    <p class="m-0 text-muted small">{{ live_good_cycles }}</p>
+                    <div class="border rounded w-100 position-relative overflow-hidden" style="height: 3rem">
+                        <div id="good_cycles_bar" class="bg-success position-absolute top-0 start-0 h-100"
+                            style="width: 0%; transition: width 0.4s ease;">
+                            <p id="good_cycles" class="fs-5 my-2 ms-2">0</p>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Bad cycles -->
+                <div>
+                    <p class="m-0 text-muted small">{{ live_bad_cycles }}</p>
+                    <div class="border rounded w-100 position-relative overflow-hidden" style="height: 3rem">
+                        <div id="bad_cycles_bar" class="bg-danger position-absolute top-0 start-0 h-100"
+                            style="width: 0%; transition: width 0.4s ease;">
+                            <p id="bad_cycles" class="fs-5 my-2 ms-2">0</p>
+                        </div>
+                    </div>
+                </div>
 
-    <form id="start_form" method="post" class="text-start gap-3 d-flex flex-column mx-auto w-fit">
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="ctrlx_ip">ctrlX IP</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="192.168.1.1" id="ctrlx_ip" name="ctrlx_ip"
-                    type="text">
+                <!-- Unknown cycles -->
+                <div>
+                    <p class="m-0 text-muted small">{{ live_unknown_cycles }}</p>
+                    <div class="border rounded w-100 position-relative overflow-hidden p-4">
+                        <div id="unknown_cycles_bar" class="bg-secondary position-absolute top-0 start-0 h-100"
+                            style="width: 0%; transition: width 0.4s ease;">
+                            <p id="unknown_cycles" class="fs-5 my-2 ms-2">0</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <label class="d-block small" for="application_id">Application ID</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="1" id="application_id" name="application_id"
-                    type="number">
-            </div>
-        </div>
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="username">username</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="boschrexroth" id="username" name="username"
-                    type="text">
-            </div>
-            <div>
-                <label class="d-block small" for="password">password</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="Muenchen81825" id="password" name="password"
-                    type="password">
-            </div>
-        </div>
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="axis_name">axis name</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="Axis_1" id="axis_name" name="axis_name" type="text">
-            </div>
-            <div>
-                <label class="d-block small" for="classification">classification</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="unknown" id="classification" name="classification"
-                    type="text">
-            </div>
-        </div>
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="target_pos">target position</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="90" id="target_pos" name="target_pos" type="number">
-            </div>
-            <div>
-                <label class="d-block small" for="home_pos">home position</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="0" id="home_pos" name="home_pos" type="number">
-            </div>
-        </div>
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="velocity">velocity</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="3600" id="velocity" name="velocity" type="number">
-            </div>
-            <div>
-                <label class="d-block small" for="acceleration">acceleration</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="3600" id="acceleration" name="acceleration"
-                    type="number">
-            </div>
-        </div>
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="time_on_s">time_on_s</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="2" id="time_on_s" name="time_on_s" type="number">
-            </div>
-            <div>
-                <label class="d-block small" for="time_pause_s">time_pause_s</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="0.5" id="time_pause_s" name="time_pause_s"
-                    type="number">
-            </div>
-        </div>
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="load_torque">load_torque</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="0" id="load_torque" name="load_torque" type="number">
-            </div>
-            <div>
-                <label class="d-block small" for="spike_torque">spike_torque</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="0" id="spike_torque" name="spike_torque"
-                    type="number">
-            </div>
-        </div>
-        <div class="d-flex gap-3">
-            <div>
-                <label class="d-block small" for="spike_start_s">spike_start_s</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="0" id="spike_start_s" name="spike_start_s"
-                    type="number">
-            </div>
-            <div>
-                <label class="d-block small" for="spike_length_s">spike_length_s</label>
-                <input class="px-2 py-1 rounded-1 border-0" value="0" id="spike_length_s" name="spike_length_s"
-                    type="number">
-            </div>
-        </div>
-        <button type="submit" class="px-3 py-2 bg-black border border-2 border-danger rounded-2 w-25">Start</button>
-    </form>
-    <div id="start_output">
-    </div>
 
-    <form id="stop_form" method="post" class="text-start gap-3 d-flex flex-column mx-auto w-fit">
-        <div class="d-flex gap-3">
-            <label class="d-block small" for="application_id_stop">Application ID</label>
-            <input class="px-2 py-1 rounded-1 border-0" value="1" id="application_id_stop" name="application_id"
-                type="number">
+            <form id="connection_form" method="post" class="d-flex text-start mb-2 mt-3 gap-3 mx-auto w-fit"
+                data-txt-start="{{ live_start }}" data-txt-stop="{{ live_stop }}"
+                data-txt-standby="{{ live_standby }}" data-txt-running="{{ live_running }}"
+                data-txt-connected="{{ live_connected }}">
+                <button type="submit" id="connection_form_button"
+                    class="px-3 py-2 bg-black border border-2 border-danger rounded-2 w-25">{{ live_start }}</button>
+                <div>
+                    <label class="d-block small text-muted" for="application_id_stop">{{ live_application_id }}</label>
+                    <input class="px-2 py-1 rounded-1 border-0" value="1" id="application_id_stop" name="application_id"
+                        type="number">
+                </div>
+            </form>
+            <div id="connection_output">
+            </div>
         </div>
-        <button type="submit" class="px-3 py-2 bg-black border border-2 border-danger rounded-2 w-25">Stop</button>
-    </form>
-    <div id="stop_output">
     </div>
 </div>
 <script>
+    async function updateSummary() {
+        result = await callStatusApi();
+
+        const unknown_cycles = result.unknown_cycles;
+        const good_cycles = result.good_cycles;
+        const bad_cycles = result.bad_cycles;
+
+        updateBar('good_cycles_bar', 'good_cycles', good_cycles, 12);
+        updateBar('bad_cycles_bar', 'bad_cycles', bad_cycles, 12);
+    }
+
+    function updateBar(barId, countId, count, max) {
+        const pct = Math.min((count / max) * 100, 100);
+        document.getElementById(barId).style.width = pct + '%';
+        document.getElementById(countId).innerHTML = count;
+    }
+
+    const BASE = window.location.pathname.startsWith('/mind') ? '/mind' : '';
+
+    const _form = document.getElementById('connection_form');
+    const TXT = {
+        start:     _form.dataset.txtStart,
+        stop:      _form.dataset.txtStop,
+        standby:   _form.dataset.txtStandby,
+        running:   _form.dataset.txtRunning,
+        connected: _form.dataset.txtConnected,
+    };
+
+    let isRunning = false;
+    let activeApplicationId = null;
+    let stopPollingFn;
+
+    // updateSummary();
+
+    document.getElementById('connection_form').onsubmit = function (event) {
+        event.preventDefault();
+        if (!isRunning) {
+            onSubmitStart().then(() => {
+                document.getElementById('connection_form_button').innerHTML = TXT.stop
+
+                isRunning = true;
+
+                const { promise, stopPolling } = startPolling(callStatusApi, statusCondition, 1000)
+
+                stopPollingFn = stopPolling;
+
+                promise.catch((error) => {
+                    stopPollingFn();
+
+                    console.log(error)
+
+                    document.getElementById('status').innerHTML = "ERROR."
+                    document.getElementById('status_box').className = "border bg-warning-subtle border-warning d-flex justify-content-center align-items-center text-center rounded w-25"
+                })
+            })
+        } else {
+            onSubmitStop();
+            stopPollingFn();
+
+            document.getElementById('connection_form_button').innerHTML = TXT.start;
+            document.getElementById('status').innerHTML = TXT.standby;
+            document.getElementById('status_box').className = "border d-flex justify-content-center align-items-center text-center rounded h-75";
+            document.getElementById('status_cycles_buffered').innerHTML = "0";
+
+            isRunning = false;
+        }
+    }
+
+    function startPolling(callBackApi, callBackCondition, time) {
+        let polling = false;
+        let rejectThis = null;
+
+        const stopPolling = () => {
+            if (!polling) {
+                console.log("Polling was already stopped...");
+            } else {
+                console.log("Stopping polling...");
+                polling = false;
+                console.log("Polling stopped :)")
+            }
+        }
+
+        const promise = new Promise((resolve, reject) => {
+            polling = true;
+
+            const executePoll = async () => {
+                try {
+                    const result = await callBackApi();
+                    console.log("1")
+                    if (!polling) return;
+                    if (callBackCondition(result)) {
+                        console.log("sad")               // [8]
+                        polling = false;
+                        resolve(result);
+                    } else if (polling) {
+                        setTimeout(executePoll, time);
+                    }
+
+                } catch (error) {
+                    polling = false;
+                    reject(new Error("Polling cancelled due to API error."))
+                }
+            }
+
+            setTimeout(executePoll, time);
+        })
+
+        return { promise, stopPolling }
+    }
+
+    function statusCondition(result) {
+        console.log("status:", result)
+
+        try {
+
+            if (result.running == true) {
+                document.getElementById('status').innerHTML = TXT.running
+                document.getElementById('status_box').className = "border border-success bg-success-subtle d-flex justify-content-center align-items-center text-center rounded h-75"
+
+                document.getElementById('status_cycles_buffered').innerHTML = result.cycles_buffered
+
+                const unknown_cycles = result.unknown_cycles;
+                const good_cycles = result.good_cycles;
+                const bad_cycles = result.bad_cycles;
+
+                const unknown_db_cycles = result.db_unknown_cycles;
+                const good_db_cycles = result.db_good_cycles;
+                const bad_db_cycles = result.db_bad_cycles;
+
+                updateBar('good_cycles_bar', 'good_cycles', good_cycles + good_db_cycles, 12);
+                updateBar('bad_cycles_bar', 'bad_cycles', bad_cycles + bad_db_cycles, 12);
+                updateBar('unknown_cycles_bar', 'unknown_cycles', unknown_cycles + unknown_db_cycles, 0);
+
+
+
+                return false;
+            } else if (result.connected == true) {
+                document.getElementById('status').innerHTML = TXT.connected
+                document.getElementById('status_box').className = "border border-warning bg-warning-subtle d-flex justify-content-center align-items-center text-center rounded h-75"
+
+                return false;
+            } else {
+                document.getElementById('status').innerHTML = TXT.standby
+                document.getElementById('status_box').className = "border d-flex justify-content-center align-items-center text-center rounded h-75"
+
+                return true;
+            };
+        } catch {
+            return true;
+        }
+    }
+
+    function callStatusApi() {
+        return fetch(`${BASE}/api/live/status`, {
+            method: "GET"
+        }).then(res => res.json())
+            .catch(err => {
+                document.getElementById("status").innerHTML = "API ERR."
+                return { connected: false, running: false, cycles_buffered: 0 };
+            });
+    }
+
     function onSubmitConnect() {
         const ctrlx_ip = document.getElementById("ctrlx_ip").value;
         const axis_name = document.getElementById("axis_name").value;
@@ -160,7 +354,7 @@
             password
         }
 
-        fetch("/api/live/connect", {
+        fetch(`${BASE}/api/live/connect`, {
             method: "POST",
             body: JSON.stringify(submissionData),
             headers: {
@@ -214,7 +408,7 @@
             spike_length_s
         }
 
-        fetch("/api/live/start", {
+        return fetch(`${BASE}/api/live/start`, {
             method: "POST",
             body: JSON.stringify(submissionData),
             headers: {
@@ -222,56 +416,38 @@
             }
         }).then(res => res.json())
             .then(data => {
-                document.getElementById("start_output").innerHTML = JSON.stringify(data)
-                document.getElementById("start_output").className = "px-3 py-2 border rounded border-success bg-success-subtle"
+                if (data.application_id) {
+                    document.getElementById("application_id_stop").value = data.application_id;
+                }
+                document.getElementById("connection_output").innerHTML = JSON.stringify(data)
+                document.getElementById("connection_output").className = "px-3 py-2 border rounded border-success bg-success-subtle"
             })
             .catch(err => {
-                document.getElementById("start_output").innerHTML = "something went wrong, try again later."
-                document.getElementById("start_output").className = "px-3 py-2 border rounded border-danger bg-danger-subtle"
+                document.getElementById("connection_output").innerHTML = "something went wrong, try again later."
+                document.getElementById("connection_output").className = "px-3 py-2 border rounded border-danger bg-danger-subtle"
+                throw err;
             });
     }
 
     function onSubmitStop() {
         const application_id = document.getElementById("application_id_stop").value;
 
-
         const submissionData = {
             application_id
         }
         console.log(submissionData)
 
-        fetch(`/api/live/stop?application_id=${application_id}`,
+        fetch(`${BASE}/api/live/stop?application_id=${application_id}`,
             { method: "POST" }
         ).then(res => res.json())
             .then(data => {
-                document.getElementById("stop_output").innerHTML = JSON.stringify(data)
-                document.getElementById("stop_output").className = "px-3 py-2 border rounded border-success bg-success-subtle"
+                document.getElementById("connection_output").innerHTML = JSON.stringify(data)
+                document.getElementById("connection_output").className = "px-3 py-2 border rounded border-success bg-success-subtle"
             })
             .catch(err => {
-                document.getElementById("stop_output").innerHTML = "something went wrong, try again later."
-                document.getElementById("stop_output").className = "px-3 py-2 border rounded border-danger bg-danger-subtle"
+                document.getElementById("connection_output").innerHTML = "something went wrong, try again later."
+                document.getElementById("connection_output").className = "px-3 py-2 border rounded border-danger bg-danger-subtle"
             });
     }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('connect_form').onsubmit = function (event) {
-            event.preventDefault();
-            onSubmitConnect();
-        }
-    })
-
-    document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('start_form').onsubmit = function (event) {
-            event.preventDefault();
-            onSubmitStart();
-        }
-    })
-
-    document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('stop_form').onsubmit = function (event) {
-            event.preventDefault();
-            onSubmitStop();
-        }
-    })
 </script>
 </div>
